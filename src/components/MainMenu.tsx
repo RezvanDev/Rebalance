@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTonConnect } from '../hooks/useTonConnect';
 import { useTelegram } from '../context/TelegramContext';
-import { useUserBalance } from '../hooks/useUserBalance';
+import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
+import { useReferrals } from '../hooks/useReferrals';
 import { referralLevels } from '../utils/referralSystem';
 import '../styles/MainMenu.css';
 import backgroundVideo from '../assets/video.mp4';
@@ -11,17 +12,13 @@ import tonIcon from '../assets/ton.svg';
 
 const MainMenu: React.FC = () => {
   const { wallet, connected, connectWallet } = useTonConnect();
-  const { balance } = useUserBalance();
+  const { balance, updateBalance, error: balanceError } = useBalance();
   const { tg, user } = useTelegram();
   const { transactions } = useTransactions();
+  const userId = user?.id || 'test123';
+  const { referrals, totalEarnings, error: referralsError, isLoading } = useReferrals(userId);
   const navigate = useNavigate();
   const [showNotification, setShowNotification] = useState(false);
-
-  useEffect(() => {
-    if (tg) {
-      tg.BackButton.hide();
-    }
-  }, [tg]);
 
   useEffect(() => {
     if (connected) {
@@ -38,16 +35,16 @@ const MainMenu: React.FC = () => {
   };
 
   const handleInvite = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
+    const referralLink = `https://t.me/your_bot?start=REF${userId}`;
     console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
 
-    if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+    if (window.Telegram?.WebApp?.openTelegramLink) {
       console.log("Используем openTelegramLink");
       window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}`);
-    } else if (window.Telegram.WebApp && window.Telegram.WebApp.shareUrl) {
+    } else if (window.Telegram?.WebApp?.shareUrl) {
       console.log("Используем WebApp.shareUrl");
       window.Telegram.WebApp.shareUrl(referralLink);
-    } else if (tg && tg.shareUrl) {
+    } else if (tg?.shareUrl) {
       console.log("Используем tg.shareUrl");
       tg.shareUrl(referralLink);
     } else if (navigator.share) {
@@ -69,7 +66,7 @@ const MainMenu: React.FC = () => {
   };
 
   const handleCopyReferralLink = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
+    const referralLink = `https://t.me/your_bot?start=REF${userId}`;
     console.log("Копирование ссылки:", referralLink);
     navigator.clipboard.writeText(referralLink).then(() => {
       console.log("Ссылка успешно скопирована");
@@ -79,6 +76,35 @@ const MainMenu: React.FC = () => {
       console.error("Ошибка при копировании:", err);
       alert(`Не удалось скопировать ссылку. Вот ваша реферальная ссылка: ${referralLink}`);
     });
+  };
+
+  const renderReferralTable = () => {
+    return (
+      <table className="table">
+        <thead>
+          <tr className="table-header">
+            <th className="table-cell">Уровень</th>
+            <th className="table-cell">Процент</th>
+            <th className="table-cell">Кол-во</th>
+            <th className="table-cell">Награда</th>
+          </tr>
+        </thead>
+        <tbody>
+          {referralLevels.map((level) => {
+            const levelReferrals = referrals?.filter(r => r.level === level.level) || [];
+            const levelEarnings = levelReferrals.reduce((sum, r) => sum + r.earnings, 0);
+            return (
+              <tr key={level.level} className="table-row">
+                <td className="table-cell">{level.level}</td>
+                <td className="table-cell">{level.percentage}%</td>
+                <td className="table-cell">{levelReferrals.length}</td>
+                <td className="table-cell">{levelEarnings.toFixed(2)} REBA</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
   };
 
   return (
@@ -94,6 +120,7 @@ const MainMenu: React.FC = () => {
         </video>
         <h2 className="balance-title">Баланс</h2>
         <p className="balance-amount">{balance} REBA</p>
+        {balanceError && <p className="error-message">{balanceError}</p>}
         <p className="balance-change">↑ 6,18% • $10,34</p>
         <p className="wallet-label">Кошелек</p>
         <p className="wallet-address">
@@ -115,49 +142,38 @@ const MainMenu: React.FC = () => {
         <div className="referrals-header">
           <div>
             <h3 className="referrals-title">Рефералы</h3>
-            <p className="referrals-count">0</p>
+            <p className="referrals-count">{referrals?.length || 0}</p>
           </div>
           <div style={{display: 'flex', gap: '10px'}}>
             <button className="invite-button" onClick={handleInvite}>Пригласить</button>
             <button className="copy-button" onClick={handleCopyReferralLink}>⧉</button>
           </div>
         </div>
-        <table className="table">
-          <thead>
-            <tr className="table-header">
-              <th className="table-cell">Уровень</th>
-              <th className="table-cell">Процент</th>
-              <th className="table-cell">Кол-во</th>
-              <th className="table-cell">Награда</th>
-            </tr>
-          </thead>
-          <tbody>
-            {referralLevels.map((level) => (
-              <tr key={level.level} className="table-row">
-                <td className="table-cell">{level.level}</td>
-                <td className="table-cell">{level.percentage}%</td>
-                <td className="table-cell">0</td>
-                <td className="table-cell">0 REBA</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {isLoading ? (
+          <p>Загрузка данных о рефералах...</p>
+        ) : (
+          <>
+            {referralsError && <p className="error-message">Ошибка: {referralsError}</p>}
+            {renderReferralTable()}
+          </>
+        )}
+        <p className="total-earnings">Общий заработок: {totalEarnings.toFixed(2)} REBA</p>
       </div>
 
       <div className="card">
-        <h3 className="list-title">Как купить или продать LIBRA?</h3>
+        <h3 className="list-title">Как купить или продать REBA?</h3>
         <ol className="ordered-list">
           <li>Перейти в Dedust.io</li>
           <li>Подключите свой кошелёк</li>
           <li>Перейдите в раздел «Swap»</li>
-          <li>Обменяйте LIBRA на другую монету или другую монету на LIBRA</li>
-          <li>LIBRA можно купить или продать только за другие токены. Мы рекомендуем использовать TON.</li>
+          <li>Обменяйте REBA на другую монету или другую монету на REBA</li>
+          <li>REBA можно купить или продать только за другие токены. Мы рекомендуем использовать TON.</li>
         </ol>
       </div>
 
       <div className="card">
         <h3 className="list-title">История транзакций</h3>
-        {transactions.length > 0 ? (
+        {transactions && transactions.length > 0 ? (
           transactions.map((transaction) => (
             <div key={transaction.id} className="transaction">
               <span className={`transaction-type ${transaction.type === 'Получение' ? 'transaction-receive' : 'transaction-withdraw'}`}>

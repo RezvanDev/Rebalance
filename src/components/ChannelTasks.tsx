@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import ChannelTaskCard from '../card/ChannelTaskCard';
 import { useUserBalance } from '../hooks/useUserBalance';
-import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
 import "../styles/ChannelTasks.css";
 
@@ -20,27 +19,26 @@ const ChannelTasks: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
   const { addToBalance } = useUserBalance();
-  const { updateChannelRewards } = useBalance();
   const { addTransaction } = useTransactions();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const initialChannels = [
-      { id: 1, name: 'Канал №1', reward: '100 LIBRA', completed: false, link: '/channel/1', channelLink: 'https://t.me/devrezvan' },
-      { id: 2, name: 'Канал №2', reward: '150 LIBRA', completed: false, link: '/channel/2', channelLink: 'https://t.me/channel2' },
-      { id: 3, name: 'Канал №3', reward: '200 LIBRA', completed: false, link: '/channel/3', channelLink: 'https://t.me/channel3' },
-      { id: 4, name: 'Канал №4', reward: '120 LIBRA', completed: false, link: '/channel/4', channelLink: 'https://t.me/channel4' },
-      { id: 5, name: 'Канал №5', reward: '180 LIBRA', completed: false, link: '/channel/5', channelLink: 'https://t.me/channel5' },
-    ];
-    if (user) {
-      const completedChannels = JSON.parse(localStorage.getItem(`completedChannels_${user.id}`) || '[]');
-      const filteredChannels = initialChannels.filter(channel => !completedChannels.includes(channel.id));
-      setChannels(filteredChannels);
-    } else {
-      setChannels(initialChannels);
-    }
-  }, [user]);
+    const fetchChannels = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/channels`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch channels');
+        }
+        const channelsData = await response.json();
+        setChannels(channelsData);
+      } catch (error) {
+        console.error('Error fetching channels:', error);
+        showMessage('Ошибка при загрузке каналов');
+      }
+    };
+    fetchChannels();
+  }, []);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -59,35 +57,72 @@ const ChannelTasks: React.FC = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const handleSubscribe = (id: number) => {
-    const channel = channels.find(c => c.id === id);
-    if (channel && user) {
-      const rewardAmount = parseInt(channel.reward.split(' ')[0]);
-      addToBalance(rewardAmount);
-      updateChannelRewards(rewardAmount);
-      
-      // Добавляем транзакцию
-      addTransaction({
-        type: 'Получение',
-        amount: `${rewardAmount} LIBRA`,
-        description: `Подписка на канал ${channel.name}`
-      });
+  const handleSubscribe = async (id: number) => {
+    if (!user?.id) {
+      console.error('User ID is not available');
+      showMessage('Ошибка: ID пользователя недоступен');
+      return;
+    }
 
-      showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
+    const channel = channels.find(c => c.id === id);
+    if (channel) {
+      const rewardAmount = parseInt(channel.reward.split(' ')[0]);
       
-      // Сохраняем ID выполненного задания в localStorage
-      const completedChannels = JSON.parse(localStorage.getItem(`completedChannels_${user.id}`) || '[]');
-      completedChannels.push(id);
-      localStorage.setItem(`completedChannels_${user.id}`, JSON.stringify(completedChannels));
-      
-      // Удаляем канал из списка
-      setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
+      try {
+        // Проверка подписки на канал
+        const checkResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/channels/check-subscription`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, channelUsername: channel.channelLink.split('/').pop() })
+        });
+        const { isSubscribed } = await checkResponse.json();
+
+        if (!isSubscribed) {
+          showMessage(`Пожалуйста, подпишитесь на канал ${channel.name} для получения награды`);
+          return;
+        }
+
+        // Обновление баланса
+        await addToBalance(rewardAmount, true);
+        
+        // Добавление транзакции
+        addTransaction({
+          type: 'Получение',
+          amount: `${rewardAmount} LIBRA`,
+          description: `Подписка на канал ${channel.name}`
+        });
+    
+        // Отправка информации о подписке на бэкенд
+        await fetch(`${import.meta.env.VITE_API_URL}/api/channels/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, channelId: id })
+        });
+    
+        showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
+    
+        setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
+      } catch (error) {
+        console.error('Error updating balance and subscribing:', error);
+        showMessage('Произошла ошибка при обновлении баланса');
+      }
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     showMessage('Обновление списка каналов...');
-    // Здесь можно добавить логику для обновления списка каналов
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/channels`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch channels');
+      }
+      const channelsData = await response.json();
+      setChannels(channelsData);
+      showMessage('Список каналов обновлен');
+    } catch (error) {
+      console.error('Error refreshing channels:', error);
+      showMessage('Ошибка при обновлении списка каналов');
+    }
   };
 
   if (!user) {
