@@ -15,6 +15,19 @@ export const useUserBalance = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}`);
       if (!response.ok) {
+        if (response.status === 404) {
+          // Если пользователь не найден, попробуем создать его
+          const createResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId: user.id, username: user.username })
+          });
+          if (!createResponse.ok) {
+            throw new Error('Не удалось создать пользователя');
+          }
+          // После создания пользователя, попробуем снова получить баланс
+          return fetchBalance();
+        }
         throw new Error('Не удалось загрузить баланс');
       }
       const userData = await response.json();

@@ -15,7 +15,10 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const telegram = (window as any).Telegram.WebApp;
     setTg(telegram);
     if (telegram.initDataUnsafe?.user) {
-      setUser(telegram.initDataUnsafe.user);
+      setUser({
+        ...telegram.initDataUnsafe.user,
+        id: telegram.initDataUnsafe.user.id.toString() // Преобразуем ID в строку
+      });
     }
     telegram.ready();
   }, []);

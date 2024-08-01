@@ -15,10 +15,10 @@ const MainMenu: React.FC = () => {
   const { balance, updateBalance, error: balanceError } = useBalance();
   const { tg, user } = useTelegram();
   const { transactions } = useTransactions();
-  const userId = user?.id || 'test123';
-  const { referrals, totalEarnings, error: referralsError, isLoading } = useReferrals(userId);
   const navigate = useNavigate();
   const [showNotification, setShowNotification] = useState(false);
+
+  const { referrals, totalEarnings, error: referralsError, isLoading } = useReferrals(user?.id);
 
   useEffect(() => {
     if (connected) {
@@ -35,7 +35,11 @@ const MainMenu: React.FC = () => {
   };
 
   const handleInvite = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${userId}`;
+    if (!user?.id) {
+      console.error('User ID is not available');
+      return;
+    }
+    const referralLink = `https://t.me/your_bot?start=REF${user.id}`;
     console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
 
     if (window.Telegram?.WebApp?.openTelegramLink) {
@@ -66,7 +70,11 @@ const MainMenu: React.FC = () => {
   };
 
   const handleCopyReferralLink = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${userId}`;
+    if (!user?.id) {
+      console.error('User ID is not available');
+      return;
+    }
+    const referralLink = `https://t.me/your_bot?start=REF${user.id}`;
     console.log("Копирование ссылки:", referralLink);
     navigator.clipboard.writeText(referralLink).then(() => {
       console.log("Ссылка успешно скопирована");
@@ -106,6 +114,10 @@ const MainMenu: React.FC = () => {
       </table>
     );
   };
+
+  if (!user) {
+    return <div>Загрузка данных пользователя...</div>;
+  }
 
   return (
     <div className="container">
