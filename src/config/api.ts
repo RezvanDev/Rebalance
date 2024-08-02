@@ -1,1 +1,0 @@
-export const API_BASE_URL = 'https://b147-202-79-184-241.ngrok-free.app'; // Замените на URL вашего бэкенда
