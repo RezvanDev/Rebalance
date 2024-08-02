@@ -122,10 +122,6 @@ const MainMenu: React.FC = () => {
     );
   };
 
-  if (!user) {
-    return <div>Загрузка данных пользователя...</div>;
-  }
-
   return (
     <div className="container">
       {showNotification && (
