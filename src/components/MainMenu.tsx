@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTonConnect } from '../hooks/useTonConnect';
-import { useTelegram } from '../context/TelegramContext';
-import { useBalance } from '../context/BalanceContext';
+import { useTelegram } from '../hooks/useTelegram';
+import { useBalance } from '../hooks/useBalance';
 import { useTransactions } from '../hooks/useTransactions';
 import { useReferrals } from '../hooks/useReferrals';
 import { referralLevels } from '../utils/referralSystem';
@@ -23,8 +23,15 @@ const MainMenu: React.FC = () => {
   useEffect(() => {
     if (connected) {
       console.log('Wallet connected successfully');
+      updateBalance();
     }
-  }, [connected]);
+  }, [connected, updateBalance]);
+
+  useEffect(() => {
+    if (user?.id) {
+      updateBalance();
+    }
+  }, [user, updateBalance]);
 
   const handleConnectWallet = async () => {
     try {
@@ -136,7 +143,7 @@ const MainMenu: React.FC = () => {
         <p className="balance-change">↑ 6,18% • $10,34</p>
         <p className="wallet-label">Кошелек</p>
         <p className="wallet-address">
-          {wallet ? wallet.address : ''}
+          {wallet ? wallet.address : 'Кошелек не подключен'}
         </p>
         {connected ? (
           <button className="withdraw-button">
