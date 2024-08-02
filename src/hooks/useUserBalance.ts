@@ -1,54 +1,45 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useTelegram } from '../context/TelegramContext';
+import { useState, useEffect } from 'react';
+import { useTonConnect } from './useTonConnect';
 
 export const useUserBalance = () => {
   const [balance, setBalance] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useTelegram();
-
-  const fetchBalance = useCallback(async () => {
-    if (!user?.id) {
-      setError('ID пользователя недоступен');
-      return;
-    }
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}`);
-      if (!response.ok) throw new Error('Не удалось загрузить баланс');
-      const userData = await response.json();
-      setBalance(userData.balance);
-      setError(null);
-    } catch (error) {
-      console.error('Failed to fetch balance:', error);
-      setError('Не удалось загрузить баланс');
-    }
-  }, [user]);
-
-  const addToBalance = useCallback(async (amount: number, isTask: boolean = false) => {
-    if (!user?.id) {
-      setError('ID пользователя недоступен');
-      return;
-    }
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}/balance`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, isTask })
-      });
-      if (!response.ok) throw new Error('Не удалось обновить баланс');
-      const updatedUser = await response.json();
-      setBalance(updatedUser.balance);
-      setError(null);
-    } catch (error) {
-      console.error('Failed to update balance:', error);
-      setError('Не удалось обновить баланс');
-    }
-  }, [user]);
+  const { wallet, connected } = useTonConnect();
 
   useEffect(() => {
-    if (user?.id) {
-      fetchBalance();
+    if (connected && wallet) {
+      // Загружаем баланс из localStorage при подключении кошелька
+      const savedBalance = localStorage.getItem('userBalance');
+      if (savedBalance) {
+        setBalance(Number(savedBalance));
+      }
     }
-  }, [fetchBalance, user]);
+  }, [connected, wallet]);
 
-  return { balance, addToBalance, fetchBalance, error };
+  const addToBalance = (amount: number) => {
+    const newBalance = balance + amount;
+    setBalance(newBalance);
+    // Сохраняем обновленный баланс в localStorage
+    localStorage.setItem('userBalance', newBalance.toString());
+    console.log(`Баланс увеличен на ${amount} REBA`);
+  };
+
+  const subtractFromBalance = (amount: number) => {
+    if (balance >= amount) {
+      const newBalance = balance - amount;
+      setBalance(newBalance);
+      // Сохраняем обновленный баланс в localStorage
+      localStorage.setItem('userBalance', newBalance.toString());
+      console.log(`Баланс уменьшен на ${amount} REBA`);
+      return true;
+    } else {
+      console.log('Недостаточно средств');
+      return false;
+    }
+  };
+
+  return {
+    balance,
+    addToBalance,
+    subtractFromBalance
+  };
 };

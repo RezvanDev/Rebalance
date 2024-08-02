@@ -1,3 +1,4 @@
+// src/hooks/useTransactions.ts
 import { useState, useEffect, useCallback } from 'react';
 import { useTelegram } from '../context/TelegramContext';
 
@@ -33,7 +34,7 @@ export const useTransactions = () => {
       date: new Date().toISOString(),
     };
     setTransactions(prevTransactions => {
-      const updatedTransactions = Array.isArray(prevTransactions) ? [transaction, ...prevTransactions] : [transaction];
+      const updatedTransactions = [transaction, ...prevTransactions];
       if (user) {
         localStorage.setItem(`transactions_${user.id}`, JSON.stringify(updatedTransactions));
       }

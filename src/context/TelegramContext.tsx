@@ -1,59 +1,41 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
-interface User {
-  id: string;
-  username: string;
+interface TelegramUser {
+  id: number;
+  username?: string;
 }
 
 interface TelegramContextType {
   tg: any;
-  user: User | null;
-  isLoading: boolean;
-  error: string | null;
+  user: TelegramUser | null;
 }
 
 const TelegramContext = createContext<TelegramContextType | undefined>(undefined);
 
 export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tg, setTg] = useState<any>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<TelegramUser | null>(null);
 
   useEffect(() => {
     const telegram = (window as any).Telegram.WebApp;
     setTg(telegram);
 
-    const registerUser = async () => {
-      if (telegram.initDataUnsafe?.user) {
-        const { id, username } = telegram.initDataUnsafe.user;
-        try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId: id.toString(), username })
-          });
-          if (!response.ok) throw new Error('Ошибка при регистрации');
-          const data = await response.json();
-          setUser({ id: data.user.telegramId, username: data.user.username });
-          if (data.message === 'Регистрация успешна') {
-            alert('Вы успешно зарегистрировались!');
-          }
-        } catch (err) {
-          setError('Не удалось зарегистрировать пользователя');
-        }
-      } else {
-        setError('Не удалось получить данные пользователя');
-      }
-      setIsLoading(false);
-    };
-
-    registerUser();
-    telegram.ready();
+    if (telegram.initDataUnsafe && telegram.initDataUnsafe.user) {
+      setUser({
+        id: telegram.initDataUnsafe.user.id,
+        username: telegram.initDataUnsafe.user.username,
+      });
+    } else {
+      // Если мы не можем получить пользователя из Telegram, создадим временного пользователя
+      setUser({
+        id: Date.now(), // Используем текущее время как временный ID
+        username: 'temp_user'
+      });
+    }
   }, []);
 
   return (
-    <TelegramContext.Provider value={{ tg, user, isLoading, error }}>
+    <TelegramContext.Provider value={{ tg, user }}>
       {children}
     </TelegramContext.Provider>
   );

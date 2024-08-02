@@ -1,29 +1,28 @@
 // BalanceContext.tsx
-import React, { createContext, useContext, useEffect } from 'react';
-import { useUserBalance } from '../hooks/useUserBalance';
+import React, { createContext, useState, useContext } from 'react';
 
 interface BalanceContextType {
   balance: number;
-  updateBalance: (amount: number) => Promise<void>;
-  error: string | null;
+  updateBalance: (amount: number) => void;
+  updateChannelRewards: (amount: number) => void;
 }
 
 const BalanceContext = createContext<BalanceContextType | undefined>(undefined);
 
 export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { balance, addToBalance, fetchBalance, error } = useUserBalance();
+  const [balance, setBalance] = useState(0);
 
-  useEffect(() => {
-    fetchBalance();
-  }, [fetchBalance]);
+  const updateBalance = (amount: number) => {
+    setBalance(prevBalance => prevBalance + amount);
+  };
 
-  const updateBalance = async (amount: number) => {
-    await addToBalance(amount, true);
-    await fetchBalance();
+  const updateChannelRewards = (amount: number) => {
+    setBalance(prevBalance => prevBalance + amount);
+    // Здесь можно добавить дополнительную логику для обработки наград за каналы
   };
 
   return (
-    <BalanceContext.Provider value={{ balance, updateBalance, error }}>
+    <BalanceContext.Provider value={{ balance, updateBalance, updateChannelRewards }}>
       {children}
     </BalanceContext.Provider>
   );
