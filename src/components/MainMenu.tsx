@@ -11,9 +11,9 @@ import tonIcon from '../assets/ton.svg';
 
 const MainMenu: React.FC = () => {
   const { wallet, connected, connectWallet } = useTonConnect();
-  const { balance } = useUserBalance();
+  const { balance, fetchBalance } = useUserBalance();
   const { tg, user } = useTelegram();
-  const { transactions } = useTransactions();
+  const { transactions, loadTransactions } = useTransactions();
   const navigate = useNavigate();
   const [showNotification, setShowNotification] = useState(false);
 
@@ -21,7 +21,11 @@ const MainMenu: React.FC = () => {
     if (tg) {
       tg.BackButton.hide();
     }
-  }, [tg]);
+    if (user) {
+      fetchBalance();
+      loadTransactions();
+    }
+  }, [tg, user, fetchBalance, loadTransactions]);
 
   useEffect(() => {
     if (connected) {

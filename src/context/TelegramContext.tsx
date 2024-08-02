@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 interface TelegramUser {
   id: number;
@@ -20,18 +21,30 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const telegram = (window as any).Telegram.WebApp;
     setTg(telegram);
 
-    if (telegram.initDataUnsafe && telegram.initDataUnsafe.user) {
-      setUser({
-        id: telegram.initDataUnsafe.user.id,
-        username: telegram.initDataUnsafe.user.username,
-      });
-    } else {
-      // Если мы не можем получить пользователя из Telegram, создадим временного пользователя
-      setUser({
-        id: Date.now(), // Используем текущее время как временный ID
-        username: 'temp_user'
-      });
-    }
+    const initUser = async () => {
+      if (telegram.initDataUnsafe && telegram.initDataUnsafe.user) {
+        const telegramUser = telegram.initDataUnsafe.user;
+        try {
+          const registeredUser = await api.registerUser(telegramUser.id.toString(), telegramUser.username);
+          setUser(registeredUser);
+        } catch (error) {
+          console.error('Failed to register user:', error);
+          // Fallback to local user if registration fails
+          setUser({
+            id: telegramUser.id,
+            username: telegramUser.username,
+          });
+        }
+      } else {
+        // Fallback for development without Telegram environment
+        setUser({
+          id: Date.now(),
+          username: 'temp_user'
+        });
+      }
+    };
+
+    initUser();
   }, []);
 
   return (

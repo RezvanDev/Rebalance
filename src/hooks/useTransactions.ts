@@ -1,6 +1,6 @@
-// src/hooks/useTransactions.ts
 import { useState, useEffect, useCallback } from 'react';
 import { useTelegram } from '../context/TelegramContext';
+import { api } from '../services/api';
 
 interface Transaction {
   id: string;
@@ -14,11 +14,13 @@ export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const { user } = useTelegram();
 
-  const loadTransactions = useCallback(() => {
+  const loadTransactions = useCallback(async () => {
     if (user) {
-      const storedTransactions = localStorage.getItem(`transactions_${user.id}`);
-      if (storedTransactions) {
-        setTransactions(JSON.parse(storedTransactions));
+      try {
+        const fetchedTransactions = await api.getTransactions(user.id.toString());
+        setTransactions(fetchedTransactions);
+      } catch (error) {
+        console.error('Failed to load transactions:', error);
       }
     }
   }, [user]);
@@ -27,19 +29,15 @@ export const useTransactions = () => {
     loadTransactions();
   }, [loadTransactions]);
 
-  const addTransaction = useCallback((newTransaction: Omit<Transaction, 'id' | 'date'>) => {
-    const transaction: Transaction = {
-      ...newTransaction,
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-    };
-    setTransactions(prevTransactions => {
-      const updatedTransactions = [transaction, ...prevTransactions];
-      if (user) {
-        localStorage.setItem(`transactions_${user.id}`, JSON.stringify(updatedTransactions));
+  const addTransaction = useCallback(async (newTransaction: Omit<Transaction, 'id' | 'date'>) => {
+    if (user) {
+      try {
+        const addedTransaction = await api.addTransaction(user.id.toString(), newTransaction);
+        setTransactions(prevTransactions => [addedTransaction, ...prevTransactions]);
+      } catch (error) {
+        console.error('Failed to add transaction:', error);
       }
-      return updatedTransactions;
-    });
+    }
   }, [user]);
 
   return { transactions, addTransaction, loadTransactions };
