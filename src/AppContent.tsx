@@ -13,6 +13,7 @@ import TokenTaskDetail from './components/TokenTaskDetail';
 const AppContent: React.FC = () => {
   const { connected } = useTonConnect();
   const location = useLocation();
+
   const isOnboarding = location.pathname === '/' && !connected;
   const showNavigationBar = !isOnboarding && location.pathname !== '/reba-academy';
 
@@ -24,6 +25,7 @@ const AppContent: React.FC = () => {
             path="/"
             element={connected ? <Navigate to="/main-menu" /> : <OnboardingPages />}
           />
+          <Route path="/onboarding" element={<OnboardingPages />} />
           <Route path="/main-menu" element={<MainMenu />} />
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/reba-academy" element={<RebaAcademy />} />

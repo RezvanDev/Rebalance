@@ -1,8 +1,9 @@
 .onboarding-container {
-  display: fixed;
+  display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100vh;
+  min-height: 100vh;
+  height: 100vh;  /* Добавлено для полного заполнения экрана */
   background-color: #000000;
   color: #ffffff;
   padding: 20px;
@@ -19,28 +20,29 @@
 }
 
 .onboarding-logo {
-  width: 200px;
+  width: 40%;
+  max-width: 200px;
   height: auto;
-  margin-bottom: 40px;
+  margin-bottom: 5vh;
 }
 
 .onboarding-title {
-  font-size: 24px;
+  font-size: clamp(20px, 5vw, 24px);
   font-weight: bold;
-  margin-bottom: 16px;
+  margin-bottom: 2vh;
 }
 
 .onboarding-description {
-  font-size: 16px;
+  font-size: clamp(14px, 3vw, 16px);
   color: #a0a0a0;
-  margin-bottom: 40px;
+  margin-bottom: 5vh;
   max-width: 80%;
   line-height: 1.5;
 }
 
 .onboarding-buttons {
   width: 100%;
-  margin-bottom: 20px;
+  margin-bottom: 3vh;
 }
 
 .onboarding-button-primary {
@@ -50,7 +52,7 @@
   padding: 15px;
   border-radius: 8px;
   border: none;
-  font-size: 18px;
+  font-size: clamp(16px, 4vw, 18px);
   font-weight: bold;
   margin-bottom: 15px;
   cursor: pointer;
@@ -60,6 +62,29 @@
   background: none;
   border: none;
   color: #3498db;
-  font-size: 16px;
+  font-size: clamp(14px, 3vw, 16px);
   cursor: pointer;
+  width: 100%;  /* Добавлено для соответствия ширине основной кнопки */
+  padding: 10px 0;  /* Добавлено для увеличения области нажатия */
+}
+
+@media (max-width: 480px) {
+  .onboarding-container {
+    padding: 10px;
+  }
+  
+  .onboarding-logo {
+    width: 60%;
+  }
+}
+
+/* Добавлено для лучшей адаптивности на больших экранах */
+@media (min-height: 800px) {
+  .onboarding-container {
+    justify-content: center;
+  }
+  
+  .onboarding-content {
+    margin-bottom: 5vh;
+  }
 }

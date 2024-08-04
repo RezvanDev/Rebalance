@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTonConnect } from '../hooks/useTonConnect';
+import { useTonConnectUI } from '@tonconnect/ui-react';
+import { connectWallet as apiConnectWallet } from '../services/api';
 import '../styles/OnboardingPages.css';
+
 
 const pages = [
   {
@@ -23,24 +26,68 @@ const pages = [
 
 const OnboardingPages: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
-  const { connectWallet, connected } = useTonConnect();
+  const { connected, account } = useTonConnect();
+  const [tonConnectUI] = useTonConnectUI();
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [telegramId, setTelegramId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (connected) {
+    // Попытка получить Telegram ID
+    const storedTelegramId = localStorage.getItem('telegramId');
+    const webAppTelegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    
+    if (storedTelegramId) {
+      setTelegramId(storedTelegramId);
+    } else if (webAppTelegramId) {
+      setTelegramId(webAppTelegramId.toString());
+      localStorage.setItem('telegramId', webAppTelegramId.toString());
+    } else {
+      console.warn('Telegram ID not found. Using test ID.');
+      const testTelegramId = '123456789';
+      setTelegramId(testTelegramId);
+      localStorage.setItem('telegramId', testTelegramId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (connected && account?.address) {
       navigate('/main-menu');
     }
-  }, [connected, navigate]);
+  }, [connected, account, navigate]);
 
   const handleContinue = async () => {
     if (currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1);
     } else {
       try {
-        await connectWallet();
+        console.log('Attempting to connect wallet...');
+        await tonConnectUI.connectWallet();
+        console.log('Wallet connection initiated');
+        
+        if (account?.address && telegramId) {
+          await saveWalletAddress(account.address);
+        }
       } catch (error) {
         console.error('Failed to connect wallet:', error);
+        setError('Не удалось подключить кошелек. Пожалуйста, попробуйте еще раз.');
       }
+    }
+  };
+
+  const saveWalletAddress = async (address: string) => {
+    if (!telegramId) {
+      setError('Telegram ID не доступен. Невозможно сохранить адрес кошелька.');
+      return;
+    }
+
+    try {
+      await apiConnectWallet(telegramId, address);
+      console.log('Wallet address saved successfully');
+      // Не нужно здесь делать navigate, так как это происходит в useEffect
+    } catch (error) {
+      console.error('Failed to save wallet address:', error);
+      setError('Не удалось сохранить адрес кошелька. Пожалуйста, попробуйте еще раз.');
     }
   };
 
@@ -60,6 +107,7 @@ const OnboardingPages: React.FC = () => {
         />
         <h1 className="onboarding-title">{page.title}</h1>
         <p className="onboarding-description">{page.description}</p>
+        {error && <p className="onboarding-error">{error}</p>}
       </div>
       <div className="onboarding-buttons">
         <button onClick={handleContinue} className="onboarding-button-primary">

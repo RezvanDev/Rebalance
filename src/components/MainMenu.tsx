@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTonConnect } from '../hooks/useTonConnect';
 import { useTelegram } from '../context/TelegramContext';
-import { useUserBalance } from '../hooks/useUserBalance';
-import { useTransactions } from '../hooks/useTransactions';
+import { getUserBalance, getReferralInfo, connectWallet as apiConnectWallet } from '../services/api';
 import { referralLevels } from '../utils/referralSystem';
 import '../styles/MainMenu.css';
 import backgroundVideo from '../assets/video.mp4';
@@ -11,11 +10,12 @@ import tonIcon from '../assets/ton.svg';
 
 const MainMenu: React.FC = () => {
   const { wallet, connected, connectWallet } = useTonConnect();
-  const { balance } = useUserBalance();
+  const [balance, setBalance] = useState<number>(0);
   const { tg, user } = useTelegram();
-  const { transactions } = useTransactions();
   const navigate = useNavigate();
   const [showNotification, setShowNotification] = useState(false);
+  const [referralInfo, setReferralInfo] = useState<any>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     if (tg) {
@@ -24,18 +24,36 @@ const MainMenu: React.FC = () => {
   }, [tg]);
 
   useEffect(() => {
-    if (connected) {
-      console.log('Wallet connected successfully');
+    if (connected && user?.id) {
+      fetchUserData();
     }
-  }, [connected]);
+  }, [connected, user]);
+
+  const fetchUserData = async () => {
+    if (!user?.id) return;
+    try {
+      const balanceData = await getUserBalance(user.id);
+      setBalance(balanceData.balance);
+
+      const referralData = await getReferralInfo(user.id);
+      setReferralInfo(referralData);
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    }
+  };
 
   const handleConnectWallet = async () => {
     try {
-      await connectWallet();
+      const walletAddress = await connectWallet();
+      if (walletAddress && user?.id) {
+        await apiConnectWallet(user.id, walletAddress);
+        fetchUserData();
+      }
     } catch (error) {
       console.error('Failed to connect wallet:', error);
     }
   };
+
 
   const handleInvite = () => {
     const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
@@ -97,7 +115,7 @@ const MainMenu: React.FC = () => {
         <p className="balance-change">↑ 6,18% • $10,34</p>
         <p className="wallet-label">Кошелек</p>
         <p className="wallet-address">
-          {wallet ? wallet.address : ''}
+          {wallet ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : ''}
         </p>
         {connected ? (
           <button className="withdraw-button">
@@ -115,7 +133,7 @@ const MainMenu: React.FC = () => {
         <div className="referrals-header">
           <div>
             <h3 className="referrals-title">Рефералы</h3>
-            <p className="referrals-count">0</p>
+            <p className="referrals-count">{referralInfo?.totalReferrals || 0}</p>
           </div>
           <div style={{display: 'flex', gap: '10px'}}>
             <button className="invite-button" onClick={handleInvite}>Пригласить</button>
@@ -132,14 +150,17 @@ const MainMenu: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {referralLevels.map((level) => (
-              <tr key={level.level} className="table-row">
-                <td className="table-cell">{level.level}</td>
-                <td className="table-cell">{level.percentage}%</td>
-                <td className="table-cell">0</td>
-                <td className="table-cell">0 REBA</td>
-              </tr>
-            ))}
+            {referralLevels.map((level) => {
+              const levelInfo = referralInfo?.levels?.find((l: any) => l.level === level.level) || {};
+              return (
+                <tr key={level.level} className="table-row">
+                  <td className="table-cell">{level.level}</td>
+                  <td className="table-cell">{level.percentage}%</td>
+                  <td className="table-cell">{levelInfo.count || 0}</td>
+                  <td className="table-cell">{levelInfo.reward || 0} REBA</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
