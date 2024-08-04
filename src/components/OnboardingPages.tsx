@@ -33,7 +33,6 @@ const OnboardingPages: React.FC = () => {
   const [telegramId, setTelegramId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Попытка получить Telegram ID
     const storedTelegramId = localStorage.getItem('telegramId');
     const webAppTelegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
     
@@ -52,9 +51,9 @@ const OnboardingPages: React.FC = () => {
 
   useEffect(() => {
     if (connected && account?.address) {
-      navigate('/main-menu');
+      saveWalletAddress(account.address);
     }
-  }, [connected, account, navigate]);
+  }, [connected, account]);
 
   const handleContinue = async () => {
     if (currentPage < pages.length - 1) {
@@ -64,10 +63,6 @@ const OnboardingPages: React.FC = () => {
         console.log('Attempting to connect wallet...');
         await tonConnectUI.connectWallet();
         console.log('Wallet connection initiated');
-        
-        if (account?.address && telegramId) {
-          await saveWalletAddress(account.address);
-        }
       } catch (error) {
         console.error('Failed to connect wallet:', error);
         setError('Не удалось подключить кошелек. Пожалуйста, попробуйте еще раз.');
@@ -84,7 +79,7 @@ const OnboardingPages: React.FC = () => {
     try {
       await apiConnectWallet(telegramId, address);
       console.log('Wallet address saved successfully');
-      // Не нужно здесь делать navigate, так как это происходит в useEffect
+      navigate('/main-menu');
     } catch (error) {
       console.error('Failed to save wallet address:', error);
       setError('Не удалось сохранить адрес кошелька. Пожалуйста, попробуйте еще раз.');
