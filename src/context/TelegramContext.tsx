@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface TelegramUser {
-  id: number;
+  id: string; // Изменим на string, так как telegramId в API используется как строка
   username?: string;
 }
 
@@ -22,13 +22,13 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (telegram.initDataUnsafe && telegram.initDataUnsafe.user) {
       setUser({
-        id: telegram.initDataUnsafe.user.id,
+        id: telegram.initDataUnsafe.user.id.toString(), // Преобразуем в строку
         username: telegram.initDataUnsafe.user.username,
       });
     } else {
       // Если мы не можем получить пользователя из Telegram, создадим временного пользователя
       setUser({
-        id: Date.now(), // Используем текущее время как временный ID
+        id: Date.now().toString(), // Используем текущее время как временный ID и преобразуем в строку
         username: 'temp_user'
       });
     }

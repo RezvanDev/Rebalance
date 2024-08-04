@@ -1,7 +1,7 @@
 {
-    "url": "https://your-app-url.com",
-    "name": "Your App Name",
-    "iconUrl": "https://your-app-url.com/app-icon.png",
-    "termsOfUseUrl": "https://your-app-url.com/terms-of-use",
-    "privacyPolicyUrl": "https://your-app-url.com/privacy-policy"
-  }
+  "url": "https://bd98-202-79-184-241.ngrok-free.app",
+  "name": "Your App Name",
+  "iconUrl": "https://bd98-202-79-184-241.ngrok-free.app/app-icon.png",
+  "termsOfUseUrl": "https://bd98-202-79-184-241.ngrok-free.app/terms-of-use",
+  "privacyPolicyUrl": "https://bd98-202-79-184-241.ngrok-free.app/privacy-policy"
+}

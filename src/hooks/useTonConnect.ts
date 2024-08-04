@@ -10,8 +10,10 @@ export function useTonConnect() {
       if (!tonConnectUI.connected) {
         try {
           await tonConnectUI.connectWallet();
+          return tonConnectUI.account?.address; // Возвращаем адрес кошелька после подключения
         } catch (e) {
-          console.error(e);
+          console.error('Failed to connect wallet:', e);
+          throw e; // Пробрасываем ошибку дальше
         }
       }
     },

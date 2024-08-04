@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTonConnect } from '../hooks/useTonConnect';
 import { useTelegram } from '../context/TelegramContext';
-import { getUserBalance, getReferralInfo, connectWallet as apiConnectWallet } from '../services/api';
-import { referralLevels } from '../utils/referralSystem';
+import { getUserBalance, getReferrals, connectWallet as apiConnectWallet, getUserInfo } from '../services/api';
 import '../styles/MainMenu.css';
 import backgroundVideo from '../assets/video.mp4';
 import tonIcon from '../assets/ton.svg'; 
@@ -15,7 +14,7 @@ const MainMenu: React.FC = () => {
   const navigate = useNavigate();
   const [showNotification, setShowNotification] = useState(false);
   const [referralInfo, setReferralInfo] = useState<any>(null);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [userInfo, setUserInfo] = useState<any>(null);
 
   useEffect(() => {
     if (tg) {
@@ -24,10 +23,10 @@ const MainMenu: React.FC = () => {
   }, [tg]);
 
   useEffect(() => {
-    if (connected && user?.id) {
+    if (user?.id) {
       fetchUserData();
     }
-  }, [connected, user]);
+  }, [user]);
 
   const fetchUserData = async () => {
     if (!user?.id) return;
@@ -35,8 +34,11 @@ const MainMenu: React.FC = () => {
       const balanceData = await getUserBalance(user.id);
       setBalance(balanceData.balance);
 
-      const referralData = await getReferralInfo(user.id);
-      setReferralInfo(referralData);
+      const referralData = await getReferrals(user.id);
+      setReferralInfo(referralData.referralsByLevels);
+
+      const userInfoData = await getUserInfo(user.id);
+      setUserInfo(userInfoData.user);
     } catch (error) {
       console.error('Failed to fetch user data:', error);
     }
@@ -115,9 +117,9 @@ const MainMenu: React.FC = () => {
         <p className="balance-change">↑ 6,18% • $10,34</p>
         <p className="wallet-label">Кошелек</p>
         <p className="wallet-address">
-          {wallet ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : ''}
+          {userInfo?.walletAddress ? `${userInfo.walletAddress.slice(0, 6)}...${userInfo.walletAddress.slice(-4)}` : ''}
         </p>
-        {connected ? (
+        {userInfo?.walletAddress ? (
           <button className="withdraw-button">
             <span style={{marginRight: '5px'}}>↑</span> Вывод
           </button>
@@ -133,7 +135,7 @@ const MainMenu: React.FC = () => {
         <div className="referrals-header">
           <div>
             <h3 className="referrals-title">Рефералы</h3>
-            <p className="referrals-count">{referralInfo?.totalReferrals || 0}</p>
+            <p className="referrals-count">{referralInfo?.reduce((sum: number, level: any) => sum + level.count, 0) || 0}</p>
           </div>
           <div style={{display: 'flex', gap: '10px'}}>
             <button className="invite-button" onClick={handleInvite}>Пригласить</button>
@@ -150,14 +152,12 @@ const MainMenu: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {referralLevels.map((level) => {
-              const levelInfo = referralInfo?.levels?.find((l: any) => l.level === level.level) || {};
-              return (
-                <tr key={level.level} className="table-row">
-                  <td className="table-cell">{level.level}</td>
-                  <td className="table-cell">{level.percentage}%</td>
-                  <td className="table-cell">{levelInfo.count || 0}</td>
-                  <td className="table-cell">{levelInfo.reward || 0} REBA</td>
+            {referralInfo?.map((level: any) => (
+              <tr key={level.level} className="table-row">
+                <td className="table-cell">{level.level}</td>
+                <td className="table-cell">{level.percentage}%</td>
+                <td className="table-cell">{level.count}</td>
+                <td className="table-cell">{level.reward || 0} REBA</td>
                 </tr>
               );
             })}

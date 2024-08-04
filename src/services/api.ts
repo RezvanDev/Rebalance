@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-const API_BASE_URL = window._env_?.API_URL || 'https://bd98-202-79-184-241.ngrok-free.app/api';
+const API_BASE_URL = window._env_?.API_URL || 'https://bd98-202-79-184-241.ngrok-free.app';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -37,12 +37,22 @@ export const getUserBalance = async (telegramId: string) => {
   }
 };
 
-export const getReferralInfo = async (telegramId: string) => {
+export const getReferrals = async (telegramId: string) => {
   try {
     const response = await api.get(`/users/${telegramId}/referrals`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching referral info:', error);
+    console.error('Error fetching referrals:', error);
+    throw error;
+  }
+};
+
+export const getUserInfo = async (telegramId: string) => {
+  try {
+    const response = await api.get(`/auth/user/${telegramId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user info:', error);
     throw error;
   }
 };
