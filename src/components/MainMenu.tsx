@@ -56,12 +56,12 @@ const MainMenu: React.FC = () => {
 
 
   const handleInvite = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
+    const referralLink = `https://t.me/testbfjBot?start=REF${user?.id}`;
     console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
 
     if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
       console.log("Используем openTelegramLink");
-      window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}`);
+      window.Telegram.WebApp.openTelegramLink(`https://t.me/testbfjBot/url?url=${encodeURIComponent(referralLink)}`);
     } else if (window.Telegram.WebApp && window.Telegram.WebApp.shareUrl) {
       console.log("Используем WebApp.shareUrl");
       window.Telegram.WebApp.shareUrl(referralLink);
@@ -87,7 +87,7 @@ const MainMenu: React.FC = () => {
   };
 
   const handleCopyReferralLink = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
+    const referralLink = `https://t.me/testbfjBot?start=REF${user?.id}`;
     console.log("Копирование ссылки:", referralLink);
     navigator.clipboard.writeText(referralLink).then(() => {
       console.log("Ссылка успешно скопирована");

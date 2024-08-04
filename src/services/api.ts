@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-const API_BASE_URL = window._env_?.API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = window._env_?.API_URL || 'https://bd98-202-79-184-241.ngrok-free.app/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
