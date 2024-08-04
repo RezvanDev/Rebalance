@@ -143,27 +143,26 @@ const MainMenu: React.FC = () => {
           </div>
         </div>
         <table className="table">
-          <thead>
-            <tr className="table-header">
-              <th className="table-cell">Уровень</th>
-              <th className="table-cell">Процент</th>
-              <th className="table-cell">Кол-во</th>
-              <th className="table-cell">Награда</th>
+        <thead>
+          <tr className="table-header">
+            <th className="table-cell">Уровень</th>
+            <th className="table-cell">Процент</th>
+            <th className="table-cell">Кол-во</th>
+            <th className="table-cell">Награда</th>
+          </tr>
+        </thead>
+        <tbody>
+          {referralInfo?.map((level: any) => (
+            <tr key={level.level} className="table-row">
+              <td className="table-cell">{level.level}</td>
+              <td className="table-cell">{level.percentage}%</td>
+              <td className="table-cell">{level.count}</td>
+              <td className="table-cell">{level.reward || 0} REBA</td>
             </tr>
-          </thead>
-          <tbody>
-            {referralInfo?.map((level: any) => (
-              <tr key={level.level} className="table-row">
-                <td className="table-cell">{level.level}</td>
-                <td className="table-cell">{level.percentage}%</td>
-                <td className="table-cell">{level.count}</td>
-                <td className="table-cell">{level.reward || 0} REBA</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
+    </div>
 
       <div className="card">
         <h3 className="list-title">Как купить или продать LIBRA?</h3>
