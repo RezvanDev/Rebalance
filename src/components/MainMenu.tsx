@@ -1,197 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTonConnect } from '../hooks/useTonConnect';
-import { useTelegram } from '../context/TelegramContext';
-import { getUserBalance, getReferrals, connectWallet as apiConnectWallet, getUserInfo } from '../services/api';
-import '../styles/MainMenu.css';
-import backgroundVideo from '../assets/video.mp4';
-import tonIcon from '../assets/ton.svg'; 
+import { useTonConnectUI } from '@tonconnect/ui-react';
+import axios from 'axios';
 
 const MainMenu: React.FC = () => {
-  const { wallet, connected, connectWallet } = useTonConnect();
-  const [balance, setBalance] = useState<number>(0);
-  const { tg, user } = useTelegram();
-  const navigate = useNavigate();
-  const [showNotification, setShowNotification] = useState(false);
-  const [referralInfo, setReferralInfo] = useState<any>(null);
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [tonConnectUI] = useTonConnectUI();
+  const [walletAddress, setWalletAddress] = useState('');
+  const [internalBalance, setInternalBalance] = useState('');
+  const [telegramUser, setTelegramUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (tg) {
-      tg.BackButton.hide();
-    }
-  }, [tg]);
+    const fetchUserInfo = async () => {
+      if (tonConnectUI.account?.address) {
+        setLoading(true);
+        setError('');
+        try {
+          // Получаем данные пользователя Telegram
+          const tgUser = (window as any).Telegram?.WebApp?.initDataUnsafe?.user;
+          if (tgUser) {
+            setTelegramUser(tgUser);
+          } else {
+            throw new Error('Telegram user data not available');
+          }
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchUserData();
-    }
-  }, [user]);
-
-  const fetchUserData = async () => {
-    if (!user?.id) return;
-    try {
-      const balanceData = await getUserBalance(user.id);
-      setBalance(balanceData.balance);
-
-      const referralData = await getReferrals(user.id);
-      setReferralInfo(referralData.referralsByLevels);
-
-      const userInfoData = await getUserInfo(user.id);
-      setUserInfo(userInfoData.user);
-    } catch (error) {
-      console.error('Failed to fetch user data:', error);
-    }
-  };
-
-  const handleConnectWallet = async () => {
-    try {
-      const walletAddress = await connectWallet();
-      if (walletAddress && user?.id) {
-        await apiConnectWallet(user.id, walletAddress);
-        fetchUserData();
+          // Получаем информацию о пользователе с бэкенда
+          const userResponse = await axios.get(`/api/auth/user/${tgUser.id}`);
+          if (userResponse.data.success) {
+            setWalletAddress(userResponse.data.user.walletAddress);
+            setInternalBalance(userResponse.data.user.balance.toString());
+          } else {
+            throw new Error(userResponse.data.error || 'Failed to fetch user info');
+          }
+        } catch (error) {
+          console.error('Error fetching user info:', error);
+          setError('Ошибка при получении информации о пользователе: ' + (error.message || 'Unknown error'));
+        } finally {
+          setLoading(false);
+        }
       }
+    };
+
+    fetchUserInfo();
+  }, [tonConnectUI.account]);
+
+  const handleDisconnect = async () => {
+    try {
+      await tonConnectUI.disconnect();
+      setWalletAddress('');
+      setInternalBalance('');
+      setTelegramUser(null);
+      setError('');
     } catch (error) {
-      console.error('Failed to connect wallet:', error);
+      console.error('Error disconnecting wallet:', error);
+      setError('Ошибка при отключении кошелька');
     }
-  };
-
-
-  const handleInvite = () => {
-    const referralLink = `https://t.me/testbfjBot?start=REF${user?.id}`;
-    console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
-
-    if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-      console.log("Используем openTelegramLink");
-      window.Telegram.WebApp.openTelegramLink(`https://t.me/testbfjBot/url?url=${encodeURIComponent(referralLink)}`);
-    } else if (window.Telegram.WebApp && window.Telegram.WebApp.shareUrl) {
-      console.log("Используем WebApp.shareUrl");
-      window.Telegram.WebApp.shareUrl(referralLink);
-    } else if (tg && tg.shareUrl) {
-      console.log("Используем tg.shareUrl");
-      tg.shareUrl(referralLink);
-    } else if (navigator.share) {
-      console.log("Используем navigator.share");
-      navigator.share({
-        title: 'Приглашение',
-        text: `Присоединяйтесь к нашему боту по этой ссылке: ${referralLink}`,
-        url: referralLink,
-      }).then(() => {
-        console.log('Успешно поделились');
-      }).catch((error) => {
-        console.log('Ошибка шаринга', error);
-        handleCopyReferralLink();
-      });
-    } else {
-      console.log("Методы шаринга недоступны, копируем ссылку");
-      handleCopyReferralLink();
-    }
-  };
-
-  const handleCopyReferralLink = () => {
-    const referralLink = `https://t.me/testbfjBot?start=REF${user?.id}`;
-    console.log("Копирование ссылки:", referralLink);
-    navigator.clipboard.writeText(referralLink).then(() => {
-      console.log("Ссылка успешно скопирована");
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 3000);
-    }).catch(err => {
-      console.error("Ошибка при копировании:", err);
-      alert(`Не удалось скопировать ссылку. Вот ваша реферальная ссылка: ${referralLink}`);
-    });
   };
 
   return (
-    <div className="container">
-      {showNotification && (
-        <div className="notification">
-          Пригласительная ссылка скопирована в буфер обмена
+    <div className="main-menu">
+      <h1>Главное меню</h1>
+      <p>Добро пожаловать в Rebalancer!</p>
+      
+      {loading && <p>Загрузка...</p>}
+      
+      {error && <p style={{color: 'red'}}>{error}</p>}
+      
+      {telegramUser && (
+        <div>
+          <p>Имя пользователя: {telegramUser.username}</p>
+          <p>Имя: {telegramUser.first_name}</p>
+          <p>Фамилия: {telegramUser.last_name}</p>
         </div>
       )}
-      <div className="balance-card">
-        <video autoPlay loop muted playsInline>
-          <source src={backgroundVideo} type="video/mp4" />
-        </video>
-        <h2 className="balance-title">Баланс</h2>
-        <p className="balance-amount">{balance} REBA</p>
-        <p className="balance-change">↑ 6,18% • $10,34</p>
-        <p className="wallet-label">Кошелек</p>
-        <p className="wallet-address">
-          {userInfo?.walletAddress ? `${userInfo.walletAddress.slice(0, 6)}...${userInfo.walletAddress.slice(-4)}` : ''}
-        </p>
-        {userInfo?.walletAddress ? (
-          <button className="withdraw-button">
-            <span style={{marginRight: '5px'}}>↑</span> Вывод
-          </button>
-        ) : (
-          <button className="connect-wallet-button" onClick={handleConnectWallet}>
-            <img src={tonIcon} alt="TON" className="ton-icon" />
-            Подключить кошелек
-          </button>
-        )}
-      </div>
-
-      <div className="card">
-        <div className="referrals-header">
-          <div>
-            <h3 className="referrals-title">Рефералы</h3>
-            <p className="referrals-count">{referralInfo?.reduce((sum: number, level: any) => sum + level.count, 0) || 0}</p>
-          </div>
-          <div style={{display: 'flex', gap: '10px'}}>
-            <button className="invite-button" onClick={handleInvite}>Пригласить</button>
-            <button className="copy-button" onClick={handleCopyReferralLink}>⧉</button>
-          </div>
+      
+      {walletAddress && (
+        <div>
+          <p>Адрес кошелька: {walletAddress}</p>
+          <p>Баланс внутренней валюты: {internalBalance}</p>
         </div>
-        <table className="table">
-        <thead>
-          <tr className="table-header">
-            <th className="table-cell">Уровень</th>
-            <th className="table-cell">Процент</th>
-            <th className="table-cell">Кол-во</th>
-            <th className="table-cell">Награда</th>
-          </tr>
-        </thead>
-        <tbody>
-          {referralInfo?.map((level: any) => (
-            <tr key={level.level} className="table-row">
-              <td className="table-cell">{level.level}</td>
-              <td className="table-cell">{level.percentage}%</td>
-              <td className="table-cell">{level.count}</td>
-              <td className="table-cell">{level.reward || 0} REBA</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-
-      <div className="card">
-        <h3 className="list-title">Как купить или продать LIBRA?</h3>
-        <ol className="ordered-list">
-          <li>Перейти в Dedust.io</li>
-          <li>Подключите свой кошелёк</li>
-          <li>Перейдите в раздел «Swap»</li>
-          <li>Обменяйте LIBRA на другую монету или другую монету на LIBRA</li>
-          <li>LIBRA можно купить или продать только за другие токены. Мы рекомендуем использовать TON.</li>
-        </ol>
-      </div>
-
-      <div className="card">
-        <h3 className="list-title">История транзакций</h3>
-        {transactions.length > 0 ? (
-          transactions.map((transaction) => (
-            <div key={transaction.id} className="transaction">
-              <span className={`transaction-type ${transaction.type === 'Получение' ? 'transaction-receive' : 'transaction-withdraw'}`}>
-                {transaction.type}
-              </span>
-              <span className="transaction-amount">{transaction.amount}</span>
-              <span className="transaction-date">{new Date(transaction.date).toLocaleString()}</span>
-              <span className="transaction-description">{transaction.description}</span>
-            </div>
-          ))
-        ) : (
-          <p>Нет транзакций для отображения</p>
-        )}
-      </div>
+      )}
+      
+      {tonConnectUI.connected && (
+        <button onClick={handleDisconnect}>Отключить кошелек</button>
+      )}
     </div>
   );
 };

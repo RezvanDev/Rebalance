@@ -1,90 +1,71 @@
 .onboarding-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 100vh;
-  height: 100vh;  /* Добавлено для полного заполнения экрана */
-  background-color: #000000;
-  color: #ffffff;
-  padding: 20px;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.onboarding-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-grow: 1;
-}
-
-.onboarding-logo {
-  width: 40%;
-  max-width: 200px;
-  height: auto;
-  margin-bottom: 5vh;
-}
-
-.onboarding-title {
-  font-size: clamp(20px, 5vw, 24px);
-  font-weight: bold;
-  margin-bottom: 2vh;
-}
-
-.onboarding-description {
-  font-size: clamp(14px, 3vw, 16px);
-  color: #a0a0a0;
-  margin-bottom: 5vh;
-  max-width: 80%;
-  line-height: 1.5;
-}
-
-.onboarding-buttons {
-  width: 100%;
-  margin-bottom: 3vh;
-}
-
-.onboarding-button-primary {
-  width: 100%;
-  background-color: #3498db;
-  color: white;
-  padding: 15px;
-  border-radius: 8px;
-  border: none;
-  font-size: clamp(16px, 4vw, 18px);
-  font-weight: bold;
-  margin-bottom: 15px;
-  cursor: pointer;
-}
-
-.onboarding-button-secondary {
-  background: none;
-  border: none;
-  color: #3498db;
-  font-size: clamp(14px, 3vw, 16px);
-  cursor: pointer;
-  width: 100%;  /* Добавлено для соответствия ширине основной кнопки */
-  padding: 10px 0;  /* Добавлено для увеличения области нажатия */
-}
-
-@media (max-width: 480px) {
-  .onboarding-container {
-    padding: 10px;
-  }
-  
-  .onboarding-logo {
-    width: 60%;
-  }
-}
-
-/* Добавлено для лучшей адаптивности на больших экранах */
-@media (min-height: 800px) {
-  .onboarding-container {
-    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 100vh;
+    background-color: #000000;
+    color: #ffffff;
+    padding: 20px;
+    text-align: center;
+    box-sizing: border-box;
   }
   
   .onboarding-content {
-    margin-bottom: 5vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
   }
-}
+  
+  .onboarding-logo {
+    width: 150px;
+    max-width: 80%;
+    height: auto;
+    margin-bottom: 40px;
+  }
+  
+  .onboarding-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 16px;
+  }
+  
+  .onboarding-description {
+    font-size: 16px;
+    color: #a0a0a0;
+    margin-bottom: 40px;
+    max-width: 80%;
+    line-height: 1.5;
+  }
+  
+  .onboarding-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .onboarding-button-primary {
+    width: 80%;
+    max-width: 300px;
+    background-color: #3498db;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    cursor: pointer;
+  }
+  
+  .onboarding-button-secondary {
+    background: none;
+    border: none;
+    color: #3498db;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
