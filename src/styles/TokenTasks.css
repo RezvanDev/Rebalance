@@ -1,0 +1,78 @@
+.token-tasks-container {
+    background-color: #000000;
+    color: white;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  .token-tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .token-tasks-header h1 {
+    font-size: 24px;
+    margin: 0;
+  }
+  
+  .refresh-button {
+    background-color: #2C2C2C;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    color: white;
+    cursor: pointer;
+  }
+  
+  .token-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .token-item {
+    background-color: #2C2C2C;
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  
+  .token-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #4CAF50;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 15px;
+    font-size: 20px;
+  }
+  
+  .token-info {
+    flex-grow: 1;
+  }
+  
+  .token-name {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 5px;
+  }
+  
+  .token-reward {
+    font-size: 14px;
+    color: #999;
+  }
+  
+  .arrow-icon {
+    font-size: 20px;
+  }

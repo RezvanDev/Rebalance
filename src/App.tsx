@@ -1,23 +1,21 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { TonConnectUIProvider } from '@tonconnect/ui-react';
-import OnboardingPages from './components/OnboardingPages';
-import MainMenu from './components/MainMenu';
-import './App.css';
+import React from "react";
+import { TelegramProvider } from "./context/TelegramContext";
+import { BalanceProvider } from "./context/BalanceContext";
+import AppContent from "./AppContent";
+import "./App.css";
+import store from "./redux/store/store";
+import { Provider } from "react-redux";
 
-const manifestUrl = "https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json";
-
-function App() {
+const App: React.FC = () => {
   return (
-    <TonConnectUIProvider manifestUrl={manifestUrl}>
-      <Router>
-        <Routes>
-          <Route path="/" element={<OnboardingPages />} />
-          <Route path="/main-menu" element={<MainMenu />} />
-        </Routes>
-      </Router>
-    </TonConnectUIProvider>
+    <TelegramProvider>
+      <BalanceProvider>
+        <Provider store={store}>
+          <AppContent />
+        </Provider>
+      </BalanceProvider>
+    </TelegramProvider>
   );
-}
+};
 
 export default App;

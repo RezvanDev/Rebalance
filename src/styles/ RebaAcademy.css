@@ -1,0 +1,103 @@
+.academy-container {
+  background-color: #000000;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  padding-top: 0; /* Убираем верхний отступ */
+}
+
+.scrollable-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 16px 80px; /* Убираем верхний отступ, оставляем боковые и нижний */
+}
+
+.academy-title {
+  font-size: 24px;
+  margin: 16px 0; /* Добавляем отступ сверху и снизу */
+  text-align: center;
+}
+
+.explanation-content, .general-education {
+  margin-bottom: 16px;
+  white-space: pre-line;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.question-card, .options-card {
+  background-color: #2C2C2C;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.question {
+  font-size: 16px;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.option {
+  background-color: #3C3C3C;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  padding: 12px;
+  margin-bottom: 8px;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  position: relative;
+  transition: background-color 0.3s ease;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.option:last-child {
+  margin-bottom: 0;
+}
+
+.option.selected {
+  background-color: #4C4C4C;
+}
+
+.option.correct {
+  background-color: #4CAF50;
+}
+
+.option.incorrect {
+  background-color: #F44336;
+}
+
+.answer-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.button-container {
+  position: fixed;
+  bottom: 16px; /* Отступ от нижнего края экрана */
+  left: 16px;
+  right: 16px;
+}
+
+.check-knowledge-button, .next-button {
+  background-color: #007AFF;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  padding: 16px;
+  width: 100%;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.check-knowledge-button:active, .next-button:active {
+  background-color: #0056b3;
+}

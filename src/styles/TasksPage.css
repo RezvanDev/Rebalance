@@ -1,0 +1,87 @@
+.tasks-container {
+  background-color: #000000;
+  color: white;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.tasks-title {
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.refresh-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background-color: #2C2C2C;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+}
+
+.task-section {
+  background-color: #2C2C2C;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-size: 16px;
+  margin: 0;
+}
+
+.completed-icon {
+  font-size: 18px;
+}
+
+.section-description {
+  font-size: 13px;
+  color: #999;
+}
+
+.task-list {
+  background-color: #2C2C2C;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid #3C3C3C;
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-item.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.task-name {
+  font-size: 14px;
+}
+
+.task-count {
+  color: #999;
+  font-size: 14px;
+}
