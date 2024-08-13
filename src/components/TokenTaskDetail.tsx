@@ -1,28 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../redux/store/reducers';
-import { completeTaskAction } from '../redux/store/actions/taskActions';
+import axios from 'axios';
 import { checkTokenOwnership } from '../utils/blockchain';
+import { BASE_URL } from '../constants/baseUrl';
 import '../styles/TokenTaskDetail.css';
+
+interface Task {
+  id: number;
+  title: string;
+  description: string;
+  reward: string;
+  completed: boolean;
+  channelUsername?: string;
+  tokenAddress?: string;
+  tokenAmount?: number;
+}
 
 const TokenTaskDetail: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { tokenId } = useParams<{ tokenId: string }>();
-  const { tasks } = useSelector((state: RootState) => state.tasks);
-  const [task, setTask] = useState(tasks.find(t => t.id === Number(tokenId)));
+  const [task, setTask] = useState<Task | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [ownsToken, setOwnsToken] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!task) {
-      navigate('/token-tasks');
-    }
-  }, [task, navigate]);
+    fetchTask();
+  }, [tokenId]);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -35,6 +42,19 @@ const TokenTaskDetail: React.FC = () => {
       }
     };
   }, [tg, navigate]);
+
+  const fetchTask = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BASE_URL}/api/tasks/${tokenId}`);
+      setTask(response.data.task);
+    } catch (error) {
+      console.error('Error fetching task:', error);
+      setMessage('Ошибка при загрузке задания');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubscribe = () => {
     if (task && task.channelUsername) {
@@ -61,7 +81,7 @@ const TokenTaskDetail: React.FC = () => {
 
       if (subscriptionStatus && tokenOwnershipStatus) {
         try {
-          await dispatch(completeTaskAction(task.id));
+          await completeTask(task.id);
           setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
           setTimeout(() => navigate('/token-tasks'), 3000);
         } catch (error) {
@@ -78,8 +98,24 @@ const TokenTaskDetail: React.FC = () => {
     return true; // Placeholder
   };
 
-  if (!task) {
+  const completeTask = async (taskId: number) => {
+    try {
+      await axios.post(`${BASE_URL}/api/tasks/${taskId}/complete`, null, {
+        params: { telegramId: user?.id }
+      });
+      setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
+    } catch (error) {
+      console.error('Error completing task:', error);
+      throw error;
+    }
+  };
+
+  if (loading) {
     return <div>Загрузка...</div>;
+  }
+
+  if (!task) {
+    return <div>Задание не найдено</div>;
   }
 
   return (
