@@ -1,22 +1,28 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../redux/store/reducers';
-import { fetchTasksAction } from '../redux/store/actions/taskActions';
-import { TaskType } from '../types/task';
+import axios from 'axios';
+import { BASE_URL } from '../constants/baseUrl';
 import '../styles/TasksPage.css';
+
+interface Task {
+  id: number;
+  type: 'CHANNEL' | 'TOKEN';
+  title: string;
+  reward: string;
+  completed: boolean;
+}
 
 const TasksPage: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    dispatch(fetchTasksAction(TaskType.CHANNEL));
-    dispatch(fetchTasksAction(TaskType.TOKEN));
-  }, [dispatch]);
+    fetchTasks();
+  }, []);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -30,6 +36,20 @@ const TasksPage: React.FC = () => {
     };
   }, [tg, navigate]);
 
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BASE_URL}/api/tasks`);
+      setTasks(response.data.tasks || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError('Ошибка при загрузке заданий');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return <div>Загрузка заданий...</div>;
   }
@@ -38,17 +58,20 @@ const TasksPage: React.FC = () => {
     return <div>Ошибка при загрузке заданий: {error}</div>;
   }
 
+  const channelTasks = tasks.filter(task => task.type === 'CHANNEL');
+  const tokenTasks = tasks.filter(task => task.type === 'TOKEN');
+
   return (
     <div className="tasks-page-container">
       <h1>Задания</h1>
       <div className="task-types">
         <div className="task-type" onClick={() => navigate('/channel-tasks')}>
           <h2>Задания по каналам</h2>
-          <p>{tasks.filter(task => task.type === TaskType.CHANNEL).length} заданий</p>
+          <p>{channelTasks.length} заданий</p>
         </div>
         <div className="task-type" onClick={() => navigate('/token-tasks')}>
           <h2>Задания по токенам</h2>
-          <p>{tasks.filter(task => task.type === TaskType.TOKEN).length} заданий</p>
+          <p>{tokenTasks.length} заданий</p>
         </div>
       </div>
     </div>

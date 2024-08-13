@@ -1,24 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../redux/store/reducers';
-import { fetchTasksAction } from '../redux/store/actions/taskActions';
-import { TaskType } from '../types/task';
-import TaskCard from './TaskCard';
-import LoadingSpinner from './LoadingSpinner';
+import axios from 'axios';
+import { BASE_URL } from '../constants/baseUrl';
 import '../styles/TokenTasks.css';
+
+interface Task {
+  id: number;
+  title: string;
+  reward: string;
+  completed: boolean;
+}
 
 const TokenTasks: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
-  const [refreshing, setRefreshing] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    dispatch(fetchTasksAction(TaskType.TOKEN));
-  }, [dispatch]);
+    fetchTasks();
+  }, []);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -32,51 +35,60 @@ const TokenTasks: React.FC = () => {
     };
   }, [tg, navigate]);
 
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BASE_URL}/api/tasks`, { params: { type: 'TOKEN' } });
+      setTasks(response.data.tasks || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError('Ошибка при загрузке заданий');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTaskClick = (taskId: number) => {
     navigate(`/token-task/${taskId}`);
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await dispatch(fetchTasksAction(TaskType.TOKEN));
-    setRefreshing(false);
-  };
-
-  if (loading && !refreshing) {
-    return <LoadingSpinner />;
+  if (loading) {
+    return <div>Загрузка заданий...</div>;
   }
 
   if (error) {
-    return <div className="error-message">Ошибка при загрузке заданий: {error}</div>;
+    return <div className="error-message">{error}</div>;
   }
 
-  const tokenTasks = tasks && tasks.length > 0 ? tasks.filter(task => task.type === TaskType.TOKEN) : [];
-
-  if (tokenTasks.length === 0) {
-    return (
-      <div className="token-tasks-container">
-        <div className="token-tasks-header">
-          <h1>Задания по токенам</h1>
-          <button onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? 'Обновление...' : 'Обновить'}
-          </button>
-        </div>
-        <div className="no-tasks-message">Нет доступных заданий по токенам</div>
-      </div>
-    );
+  if (tasks.length === 0) {
+    return <div>Нет доступных заданий по токенам</div>;
   }
 
   return (
     <div className="token-tasks-container">
       <div className="token-tasks-header">
         <h1>Задания по токенам</h1>
-        <button onClick={handleRefresh} disabled={refreshing}>
-          {refreshing ? 'Обновление...' : 'Обновить'}
-        </button>
+        <button onClick={fetchTasks}>Обновить</button>
       </div>
       <div className="token-list">
-        {tokenTasks.map((task) => (
-          <TaskCard key={task.id} task={task} onClick={handleTaskClick} />
+        {tasks.map((task) => (
+          <div
+            key={task.id}
+            className={`token-item ${task.completed ? 'completed' : ''}`}
+            onClick={() => handleTaskClick(task.id)}
+          >
+            <div className="token-icon">₭</div>
+            <div className="token-info">
+              <span className="token-name">{task.title}</span>
+              <span className="token-reward">{task.reward}</span>
+            </div>
+            {task.completed ? (
+              <span className="completed-icon">✓</span>
+            ) : (
+              <span className="arrow-icon">›</span>
+            )}
+          </div>
         ))}
       </div>
     </div>
