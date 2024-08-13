@@ -16,6 +16,7 @@ interface Task {
   tokenAddress?: string;
   tokenAmount?: number;
   maxParticipants?: number;
+  currentParticipants?: number;
 }
 
 const TasksPage: React.FC = () => {
@@ -24,17 +25,6 @@ const TasksPage: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newTask, setNewTask] = useState<Partial<Task>>({
-    type: 'CHANNEL',
-    title: '',
-    description: '',
-    reward: '',
-    channelUsername: '',
-    tokenAddress: '',
-    tokenAmount: undefined,
-    maxParticipants: undefined
-  });
 
   useEffect(() => {
     fetchTasks();
@@ -66,31 +56,16 @@ const TasksPage: React.FC = () => {
     }
   };
 
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post(`${BASE_URL}/api/tasks`, newTask);
-      setTasks([...tasks, response.data.task]);
-      setShowCreateForm(false);
-      setNewTask({
-        type: 'CHANNEL',
-        title: '',
-        description: '',
-        reward: '',
-        channelUsername: '',
-        tokenAddress: '',
-        tokenAmount: undefined,
-        maxParticipants: undefined
-      });
-    } catch (error) {
-      console.error('Error creating task:', error);
-      setError('Ошибка при создании задания');
+  const handleTaskClick = (task: Task) => {
+    if (task.type === 'CHANNEL') {
+      window.open(`https://t.me/${task.channelUsername}`, '_blank');
+    } else if (task.type === 'TOKEN') {
+      navigate(`/token-task/${task.id}`);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewTask({ ...newTask, [name]: value });
+  const handleAdminClick = () => {
+    navigate('/admin');
   };
 
   if (loading) {
@@ -101,92 +76,25 @@ const TasksPage: React.FC = () => {
     return <div>Ошибка при загрузке заданий: {error}</div>;
   }
 
-  const channelTasks = tasks.filter(task => task.type === 'CHANNEL');
-  const tokenTasks = tasks.filter(task => task.type === 'TOKEN');
-
   return (
     <div className="tasks-page-container">
-      <h1>Задания</h1>
-      <button onClick={() => setShowCreateForm(!showCreateForm)}>
-        {showCreateForm ? 'Отменить' : 'Создать новое задание'}
-      </button>
-      
-      {showCreateForm && (
-        <form onSubmit={handleCreateTask} className="create-task-form">
-          <select name="type" value={newTask.type} onChange={handleInputChange}>
-            <option value="CHANNEL">Задание по каналу</option>
-            <option value="TOKEN">Задание по токену</option>
-          </select>
-          <input
-            type="text"
-            name="title"
-            value={newTask.title}
-            onChange={handleInputChange}
-            placeholder="Название задания"
-            required
-          />
-          <textarea
-            name="description"
-            value={newTask.description}
-            onChange={handleInputChange}
-            placeholder="Описание задания"
-            required
-          />
-          <input
-            type="text"
-            name="reward"
-            value={newTask.reward}
-            onChange={handleInputChange}
-            placeholder="Награда"
-            required
-          />
-          {newTask.type === 'CHANNEL' && (
-            <input
-              type="text"
-              name="channelUsername"
-              value={newTask.channelUsername}
-              onChange={handleInputChange}
-              placeholder="Имя пользователя канала"
-            />
-          )}
-          {newTask.type === 'TOKEN' && (
-            <>
-              <input
-                type="text"
-                name="tokenAddress"
-                value={newTask.tokenAddress}
-                onChange={handleInputChange}
-                placeholder="Адрес токена"
-              />
-              <input
-                type="number"
-                name="tokenAmount"
-                value={newTask.tokenAmount}
-                onChange={handleInputChange}
-                placeholder="Количество токенов"
-              />
-            </>
-          )}
-          <input
-            type="number"
-            name="maxParticipants"
-            value={newTask.maxParticipants}
-            onChange={handleInputChange}
-            placeholder="Максимальное количество участников"
-          />
-          <button type="submit">Создать задание</button>
-        </form>
-      )}
-
-      <div className="task-types">
-        <div className="task-type" onClick={() => navigate('/channel-tasks')}>
-          <h2>Задания по каналам</h2>
-          <p>{channelTasks.length} заданий</p>
-        </div>
-        <div className="task-type" onClick={() => navigate('/token-tasks')}>
-          <h2>Задания по токенам</h2>
-          <p>{tokenTasks.length} заданий</p>
-        </div>
+      <h1>Доступные задания</h1>
+      <button onClick={handleAdminClick}>Админка</button>
+      <div className="tasks-list">
+        {tasks.map((task) => (
+          <div key={task.id} className="task-item" onClick={() => handleTaskClick(task)}>
+            <h3>{task.title}</h3>
+            <p>{task.description}</p>
+            <p>Награда: {task.reward}</p>
+            {task.type === 'CHANNEL' && <p>Канал: @{task.channelUsername}</p>}
+            {task.type === 'TOKEN' && (
+              <>
+                <p>Требуемое количество токенов: {task.tokenAmount}</p>
+                <p>Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
+              </>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
