@@ -1,0 +1,49 @@
+.tasks-page-container {
+    padding: 20px;
+  }
+  
+  .create-task-form {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .create-task-form input,
+  .create-task-form select,
+  .create-task-form textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .create-task-form button {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .create-task-form button:hover {
+    background-color: #0056b3;
+  }
+  
+  .task-types {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .task-type {
+    flex: 1;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .task-type:hover {
+    background-color: #e9ecef;
+  }
