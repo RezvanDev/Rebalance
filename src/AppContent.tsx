@@ -6,7 +6,7 @@ import MainMenu from './components/MainMenu';
 import TasksPage from './components/TasksPage';
 import RebaAcademy from './components/RebaAcademy';
 import ChannelTasks from './components/ChannelTasks';
-import TokenTasks from './components/TokenTasks';
+import TokenTasks from './components/TokenTask'; 
 import NavigationBar from './components/NavigationBar';
 import TokenTaskDetail from './components/TokenTaskDetail';
 
