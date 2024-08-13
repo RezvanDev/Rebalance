@@ -39,9 +39,17 @@ const ChannelTasks: React.FC = () => {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/tasks?type=CHANNEL`);
-      setTasks(response.data.tasks);
-      setError(null);
+      const response = await axios.get(`${API_URL}/tasks?type=CHANNEL`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      if (response.data && Array.isArray(response.data.tasks)) {
+        setTasks(response.data.tasks);
+        setError(null);
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (err) {
       console.error('Error fetching channel tasks:', err);
       setError('Ошибка при загрузке заданий по каналам');
@@ -51,15 +59,11 @@ const ChannelTasks: React.FC = () => {
   };
 
   const handleSubscribe = async (taskId: number, channelUsername: string) => {
-    // Здесь можно добавить логику подписки на канал
     window.open(`https://t.me/${channelUsername}`, '_blank');
-    
-    // После подписки отмечаем задание как выполненное
     try {
       await axios.post(`${API_URL}/tasks/${taskId}/complete`, null, {
         params: { telegramId: user?.id }
       });
-      // Обновляем список заданий
       fetchTasks();
     } catch (error) {
       console.error('Error completing task:', error);

@@ -40,9 +40,17 @@ const TokenTasks: React.FC = () => {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/tasks?type=TOKEN`);
-      setTasks(response.data.tasks);
-      setError(null);
+      const response = await axios.get(`${API_URL}/tasks?type=TOKEN`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      if (response.data && Array.isArray(response.data.tasks)) {
+        setTasks(response.data.tasks);
+        setError(null);
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (err) {
       console.error('Error fetching token tasks:', err);
       setError('Ошибка при загрузке заданий по токенам');
@@ -68,8 +76,8 @@ const TokenTasks: React.FC = () => {
       <h1>Задания по токенам</h1>
       <div className="token-list">
         {tasks.map((task) => (
-          <div 
-            key={task.id} 
+          <div
+            key={task.id}
             className={`token-item ${task.completed ? 'completed' : ''}`}
             onClick={() => handleTaskClick(task.id)}
           >

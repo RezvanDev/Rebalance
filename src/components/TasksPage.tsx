@@ -1,25 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from "../context/TelegramContext";
-import axios from 'axios';
 import '../styles/TasksPage.css';
-
-const API_URL = 'https://f2a6-202-79-184-241.ngrok-free.app/api'; // Замените на ваш реальный URL API
-
-interface Task {
-  id: number;
-  type: 'CHANNEL' | 'TOKEN';
-  title: string;
-  reward: string;
-}
 
 const TasksPage: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
   const [academyCompleted, setAcademyCompleted] = useState(false);
-  const [channelTasksCount, setChannelTasksCount] = useState<number | null>(null);
-  const [tokenTasksCount, setTokenTasksCount] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const isCompleted = localStorage.getItem('academyCompleted') === 'true';
@@ -39,50 +26,15 @@ const TasksPage: React.FC = () => {
     navigate('/reba-academy');
   };
 
-  const fetchTasks = async (type: 'CHANNEL' | 'TOKEN') => {
-    try {
-      const response = await axios.get(`${API_URL}/tasks?type=${type}`);
-      console.log(`Response for ${type} tasks:`, response.data); // Добавлено для отладки
-      if (response.data && response.data.success && Array.isArray(response.data.tasks)) {
-        return response.data.tasks.length;
-      }
-      throw new Error('Invalid response format');
-    } catch (error) {
-      console.error(`Error fetching ${type} tasks:`, error);
-      if (axios.isAxiosError(error) && error.response) {
-        console.error('Error response:', error.response.data);
-        console.error('Error status:', error.response.status);
-      }
-      setError(`Failed to load ${type.toLowerCase()} tasks. Please try again.`);
-      return null;
-    }
-  };
-
-  const handleChannelTasksClick = async () => {
-    if (academyCompleted) {
-      setError(null); // Сбрасываем предыдущие ошибки
-      const count = await fetchTasks('CHANNEL');
-      setChannelTasksCount(count);
-      if (count !== null) {
-        navigate('/channel-tasks');
-      }
-    }
-  };
-
-  const handleTokenTasksClick = async () => {
-    if (academyCompleted) {
-      setError(null); // Сбрасываем предыдущие ошибки
-      const count = await fetchTasks('TOKEN');
-      setTokenTasksCount(count);
-      if (count !== null) {
-        navigate('/token-tasks');
-      }
-    }
-  };
-
   const handleTaskClick = (taskType: string) => {
     if (academyCompleted) {
       switch (taskType) {
+        case 'channels':
+          navigate('/channel-tasks');
+          break;
+        case 'tokens':
+          navigate('/token-tasks');
+          break;
         case 'staking':
           navigate('/staking-tasks');
           break;
@@ -98,7 +50,6 @@ const TasksPage: React.FC = () => {
   return (
     <div className="tasks-container">
       <h1 className="tasks-title">Выполняйте задания и получайте токены</h1>
-      {error && <div className="error-message">{error}</div>}
       <div className="task-section" onClick={handleAcademyClick}>
         <div className="task-header">
           <h2 className="section-title">База – Академия REBA</h2>
@@ -113,31 +64,31 @@ const TasksPage: React.FC = () => {
       <div className="task-list">
         <div
           className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={handleChannelTasksClick}
+          onClick={() => handleTaskClick('channels')}
         >
           <span className="task-name">Задания по каналам</span>
-          <span className="task-count">{channelTasksCount !== null ? channelTasksCount : '...'} &gt;</span>
+          <span className="task-count">&gt;</span>
         </div>
         <div
           className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={handleTokenTasksClick}
+          onClick={() => handleTaskClick('tokens')}
         >
           <span className="task-name">Задания по токенам</span>
-          <span className="task-count">{tokenTasksCount !== null ? tokenTasksCount : '...'} &gt;</span>
+          <span className="task-count">&gt;</span>
         </div>
         <div
           className={`task-item ${!academyCompleted && 'disabled'}`}
           onClick={() => handleTaskClick('staking')}
         >
           <span className="task-name">Задания по стейкингу</span>
-          <span className="task-count">5 &gt;</span>
+          <span className="task-count">&gt;</span>
         </div>
         <div
           className={`task-item ${!academyCompleted && 'disabled'}`}
           onClick={() => handleTaskClick('farming')}
         >
           <span className="task-name">Задания по фармингу</span>
-          <span className="task-count">5 &gt;</span>
+          <span className="task-count">&gt;</span>
         </div>
       </div>
     </div>
