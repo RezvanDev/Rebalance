@@ -3,25 +3,26 @@ import { useNavigate } from 'react-router-dom';
 
 interface ChannelTaskCardProps {
   id: number;
-  title: string;
+  name: string;
   reward: string;
   completed: boolean;
-  channelUsername: string;
+  link: string;
+  channelLink: string;
   onSubscribe: (id: number) => void;
 }
 
 const ChannelTaskCard: React.FC<ChannelTaskCardProps> = ({
-  id, title, reward, completed, channelUsername, onSubscribe
+  id, name, reward, completed, link, channelLink, onSubscribe
 }) => {
   const navigate = useNavigate();
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!completed) {
-      window.open(`https://t.me/${channelUsername}`, '_blank');
+      window.open(channelLink, '_blank');
       onSubscribe(id);
     } else {
-      navigate(`/channel/${channelUsername}`);
+      navigate(link);
     }
   };
 
@@ -32,8 +33,8 @@ const ChannelTaskCard: React.FC<ChannelTaskCardProps> = ({
     >
       <img src="/path-to-channel-icon.png" alt="Channel icon" className="channel-icon" />
       <div className="channel-info">
-        <span className="channel-name">{title}</span>
-        <span className="channel-reward">{reward} REBA</span>
+        <span className="channel-name">{name}</span>
+        <span className="channel-reward">{reward}</span>
       </div>
       {completed ? (
         <span className="completed-icon">✓</span>
