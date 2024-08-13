@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from "../context/TelegramContext";
+import axios from 'axios';
 import '../styles/TasksPage.css';
+
+const API_URL = 'https://96ef-202-79-184-241.ngrok-free.app/api'; // Замените на URL вашего API
+
+interface Task {
+  id: number;
+  type: 'CHANNEL' | 'TOKEN';
+  name: string;
+  reward: string;
+  description: string;
+}
 
 const TasksPage: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
   const [academyCompleted, setAcademyCompleted] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     const isCompleted = localStorage.getItem('academyCompleted') === 'true';
@@ -15,6 +27,7 @@ const TasksPage: React.FC = () => {
       tg.BackButton.show();
       tg.BackButton.onClick(() => navigate('/main-menu'));
     }
+    fetchTasks();
     return () => {
       if (tg && tg.BackButton) {
         tg.BackButton.offClick();
@@ -22,28 +35,22 @@ const TasksPage: React.FC = () => {
     };
   }, [tg, navigate]);
 
+  const fetchTasks = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/tasks`);
+      setTasks(response.data);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  };
+
   const handleAcademyClick = () => {
     navigate('/reba-academy');
   };
 
-  const handleTaskClick = (taskType: string) => {
+  const handleTaskClick = (taskId: number, taskType: string) => {
     if (academyCompleted) {
-      switch (taskType) {
-        case 'channels':
-          navigate('/channel-tasks');
-          break;
-        case 'tokens':
-          navigate('/token-tasks');
-          break;
-        case 'staking':
-          navigate('/staking-tasks');
-          break;
-        case 'farming':
-          navigate('/farming-tasks');
-          break;
-        default:
-          break;
-      }
+      navigate(`/${taskType.toLowerCase()}-task/${taskId}`);
     }
   };
 
@@ -62,34 +69,16 @@ const TasksPage: React.FC = () => {
         </p>
       </div>
       <div className="task-list">
-        <div
-          className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={() => handleTaskClick('channels')}
-        >
-          <span className="task-name">Задания по каналам</span>
-          <span className="task-count">5 &gt;</span>
-        </div>
-        <div
-          className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={() => handleTaskClick('tokens')}
-        >
-          <span className="task-name">Задания по токенам</span>
-          <span className="task-count">5 &gt;</span>
-        </div>
-        <div
-          className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={() => handleTaskClick('staking')}
-        >
-          <span className="task-name">Задания по стейкингу</span>
-          <span className="task-count">5 &gt;</span>
-        </div>
-        <div
-          className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={() => handleTaskClick('farming')}
-        >
-          <span className="task-name">Задания по фармингу</span>
-          <span className="task-count">5 &gt;</span>
-        </div>
+        {tasks.map((task) => (
+          <div
+            key={task.id}
+            className={`task-item ${!academyCompleted && 'disabled'}`}
+            onClick={() => handleTaskClick(task.id, task.type)}
+          >
+            <span className="task-name">{task.name}</span>
+            <span className="task-reward">{task.reward}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
