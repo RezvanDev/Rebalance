@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useTelegram } from "../context/TelegramContext";
 import { useTransactions } from "../hooks/useTransactions";
@@ -10,17 +9,14 @@ import tonIcon from "../assets/ton.svg";
 import axios from "axios";
 import { BASE_URL } from "../constants/baseUrl";
 import { useTonConnectUI } from "@tonconnect/ui-react";
-import { useActions } from "../hooks/useActions";
-import { useTypeSelector } from "../hooks/useTypeSelector";
 
 const MainMenu: React.FC = () => {
   const [tonConnectUI] = useTonConnectUI();
   const { connected, connectWallet, walletAddress, wallet } = useTonConnect();
   const { tg, user } = useTelegram();
   const { transactions } = useTransactions();
-  const { fetchUser } = useActions();
   const [showNotification, setShowNotification] = useState(false);
-  const { userData } = useTypeSelector((state) => state.user);
+  const [userData, setUserData] = useState<any>(null);
   
   useEffect(() => {
     if (tg) {
@@ -30,35 +26,41 @@ const MainMenu: React.FC = () => {
   
   const addUser = async () => {
     const walletAddress = tonConnectUI.account?.address;
-    //создание пользователя
     try {
-      const response = await axios
-        .post(`${BASE_URL}/api/auth/register`, null, {
-          params: {
-            telegramId: user?.id,
-            username: user?.username,
-            firstName: user?.username,
-            lastName: user?.username,
-            referredById: user?.id,
-            walletAddress,
-          },
-        })
-        .then((response) => console.log(response.data))
-        .catch((err) => console.log(err));
-        
-        fetchUser (walletAddress)
-        return response;
+      const response = await axios.post(`${BASE_URL}/api/auth/register`, null, {
+        params: {
+          telegramId: user?.id,
+          username: user?.username,
+          firstName: user?.username,
+          lastName: user?.username,
+          referredById: user?.id,
+          walletAddress,
+        },
+      });
+      console.log(response.data);
+      fetchUser(walletAddress);
     } catch (error) {
       console.log("Error sending wallet data:", error);
+    }
+  };
+
+  const fetchUser = async (address: string | undefined) => {
+    if (address) {
+      try {
+        const response = await axios.get(`${BASE_URL}/api/auth/user-by-address/${address}`);
+        setUserData(response.data.user);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
     }
   };
 
   useEffect(() => {
     if (connected) {
       console.log("Wallet connected successfully");
-      fetchUser (wallet?.address)
+      fetchUser(wallet?.address);
     }
-  }, [connected]);
+  }, [connected, wallet?.address]);
 
   const handleConnectWallet = async () => {
     try {
