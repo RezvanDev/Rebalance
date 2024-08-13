@@ -1,41 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import axios from 'axios';
-import { BASE_URL } from '../constants/baseUrl';
-import '../styles/TokenTaskDetail.css';
+import TokenTaskCard from '../card/TokenTaskCard';
+import { tokenTasks } from '../config/tokenTasks';
+import '../styles/TokenTasks.css';
 
-interface Task {
-  id: number;
-  title: string;
-  description: string;
-  reward: string;
-  completed: boolean;
-  channelUsername?: string;
-  tokenAddress?: string;
-  tokenAmount?: number;
-  maxParticipants?: number;
-  currentParticipants?: number;
-}
-
-const TokenTaskDetail: React.FC = () => {
-  const { tg, user } = useTelegram();
+const TokenTasks: React.FC = () => {
+  const { tg } = useTelegram();
   const navigate = useNavigate();
-  const { taskId } = useParams<{ taskId: string }>();
-  const [task, setTask] = useState<Task | null>(null);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [ownsToken, setOwnsToken] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchTask();
-  }, [taskId]);
-
-  useEffect(() => {
+  React.useEffect(() => {
     if (tg && tg.BackButton) {
       tg.BackButton.show();
-      tg.BackButton.onClick(() => navigate('/token-tasks'));
+      tg.BackButton.onClick(() => navigate('/tasks'));
     }
     return () => {
       if (tg && tg.BackButton) {
@@ -44,107 +21,25 @@ const TokenTaskDetail: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const fetchTask = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${BASE_URL}/api/tasks/${taskId}`);
-      setTask(response.data.task);
-      checkRequirements(response.data.task);
-    } catch (error) {
-      console.error('Error fetching task:', error);
-      setMessage('Ошибка при загрузке задания');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkRequirements = async (task: Task) => {
-    if (task.channelUsername) {
-      const subscribed = await checkChannelSubscription(task.channelUsername);
-      setIsSubscribed(subscribed);
-    }
-    if (task.tokenAddress && task.tokenAmount) {
-      const hasTokens = await checkTokenOwnership(task.tokenAddress, task.tokenAmount);
-      setOwnsToken(hasTokens);
-    }
-  };
-
-  const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
-    try {
-      const response = await axios.get(`${BASE_URL}/api/telegram/check-subscription`, {
-        params: { telegramId: user?.id, channelUsername }
-      });
-      return response.data.isSubscribed;
-    } catch (error) {
-      console.error('Error checking channel subscription:', error);
-      return false;
-    }
-  };
-
-  const checkTokenOwnership = async (tokenAddress: string, requiredAmount: number): Promise<boolean> => {
-    try {
-      const response = await axios.get(`${BASE_URL}/api/ton/check-balance`, {
-        params: { address: user?.walletAddress, tokenAddress, requiredAmount }
-      });
-      return response.data.hasEnoughTokens;
-    } catch (error) {
-      console.error('Error checking token ownership:', error);
-      return false;
-    }
-  };
-
-  const handleCompleteTask = async () => {
-    if (!task || !user) return;
-
-    try {
-      const response = await axios.post(`${BASE_URL}/api/tasks/${task.id}/complete`, null, {
-        params: { telegramId: user.id }
-      });
-      setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
-      setTask({ ...task, completed: true });
-    } catch (error) {
-      console.error('Error completing task:', error);
-      setMessage('Произошла ошибка при выполнении задания');
-    }
-  };
-
-  if (loading) {
-    return <div>Загрузка...</div>;
-  }
-
-  if (!task) {
-    return <div>Задание не найдено</div>;
-  }
-
   return (
-    <div className="token-task-detail">
-      <h1>{task.title}</h1>
-      <p>{task.description}</p>
-      <div className="task-info">
-        <p>Награда: {task.reward}</p>
-        <p>Требуемое количество токенов: {task.tokenAmount}</p>
-        <p>Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
+    <div className="token-tasks-container">
+      <div className="token-tasks-header">
+        <h1>Задания по токенам</h1>
       </div>
-      <div className="task-requirements">
-        <p>Требования:</p>
-        <ul>
-          <li className={isSubscribed ? 'completed' : ''}>
-            Подписаться на канал @{task.channelUsername}
-          </li>
-          <li className={ownsToken ? 'completed' : ''}>
-            Иметь {task.tokenAmount} токенов на балансе
-          </li>
-        </ul>
+      <div className="token-list">
+        {tokenTasks.map((task) => (
+          <TokenTaskCard
+            key={task.id}
+            id={task.id}
+            name={task.name}
+            reward={task.reward}
+            link={`/token-task/${task.id}`}
+            completed={false} // Здесь нужно добавить логику для определения, выполнено ли задание
+          />
+        ))}
       </div>
-      <button 
-        onClick={handleCompleteTask} 
-        disabled={!isSubscribed || !ownsToken || task.completed}
-      >
-        {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
-      </button>
-      {message && <div className="message">{message}</div>}
     </div>
   );
 };
 
-export default TokenTaskDetail;
+export default TokenTasks;

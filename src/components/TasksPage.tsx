@@ -1,36 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTelegram } from '../context/TelegramContext';
-import axios from 'axios';
-import { BASE_URL } from '../constants/baseUrl';
+import { useTelegram } from "../context/TelegramContext";
 import '../styles/TasksPage.css';
 
-interface Task {
-  id: number;
-  type: 'CHANNEL' | 'TOKEN';
-  title: string;
-  description: string;
-  reward: string;
-  completed: boolean;
-  channelUsername?: string;
-  tokenAddress?: string;
-  tokenAmount?: number;
-  maxParticipants?: number;
-  currentParticipants?: number;
-}
-
 const TasksPage: React.FC = () => {
-  const { tg, user } = useTelegram();
+  const { tg } = useTelegram();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [academyCompleted, setAcademyCompleted] = useState(false);
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
-
-  useEffect(() => {
+    const isCompleted = localStorage.getItem('academyCompleted') === 'true';
+    setAcademyCompleted(isCompleted);
     if (tg && tg.BackButton) {
       tg.BackButton.show();
       tg.BackButton.onClick(() => navigate('/main-menu'));
@@ -42,54 +22,74 @@ const TasksPage: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const fetchTasks = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${BASE_URL}/api/tasks`);
-      setTasks(response.data.tasks || []);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching tasks:', err);
-      setError('Ошибка при загрузке заданий');
-    } finally {
-      setLoading(false);
-    }
+  const handleAcademyClick = () => {
+    navigate('/reba-academy');
   };
 
-  const handleTaskClick = (task: Task) => {
-    if (task.type === 'CHANNEL') {
-      window.open(`https://t.me/${task.channelUsername}`, '_blank');
-    } else if (task.type === 'TOKEN') {
-      navigate(`/token-task/${task.id}`);
+  const handleTaskClick = (taskType: string) => {
+    if (academyCompleted) {
+      switch (taskType) {
+        case 'channels':
+          navigate('/channel-tasks');
+          break;
+        case 'tokens':
+          navigate('/token-tasks');
+          break;
+        case 'staking':
+          navigate('/staking-tasks');
+          break;
+        case 'farming':
+          navigate('/farming-tasks');
+          break;
+        default:
+          break;
+      }
     }
   };
-
-  if (loading) {
-    return <div className="loading">Загрузка заданий...</div>;
-  }
-
-  if (error) {
-    return <div className="error">Ошибка при загрузке заданий: {error}</div>;
-  }
 
   return (
-    <div className="tasks-page-container">
-      <h1>Доступные задания</h1>
-      <div className="tasks-list">
-        {tasks.map((task) => (
-          <div key={task.id} className="task-item" onClick={() => handleTaskClick(task)}>
-            <h3>{task.title}</h3>
-            <p>{task.description}</p>
-            <p className="reward">Награда: {task.reward}</p>
-            {task.type === 'CHANNEL' && <p className="channel">Канал: @{task.channelUsername}</p>}
-            {task.type === 'TOKEN' && (
-              <>
-                <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>
-                <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
-              </>
-            )}
-          </div>
-        ))}
+    <div className="tasks-container">
+      <h1 className="tasks-title">Выполняйте задания и получайте токены</h1>
+      <div className="task-section" onClick={handleAcademyClick}>
+        <div className="task-header">
+          <h2 className="section-title">База – Академия REBA</h2>
+          {academyCompleted && <span className="completed-icon">✅</span>}
+        </div>
+        <p className="section-description">
+          {academyCompleted
+            ? "Академия пройдена. Нажмите, чтобы повторить."
+            : "Для доступа к заданиям, сперва необходимо пройти академию"}
+        </p>
+      </div>
+      <div className="task-list">
+        <div
+          className={`task-item ${!academyCompleted && 'disabled'}`}
+          onClick={() => handleTaskClick('channels')}
+        >
+          <span className="task-name">Задания по каналам</span>
+          <span className="task-count">5 &gt;</span>
+        </div>
+        <div
+          className={`task-item ${!academyCompleted && 'disabled'}`}
+          onClick={() => handleTaskClick('tokens')}
+        >
+          <span className="task-name">Задания по токенам</span>
+          <span className="task-count">5 &gt;</span>
+        </div>
+        <div
+          className={`task-item ${!academyCompleted && 'disabled'}`}
+          onClick={() => handleTaskClick('staking')}
+        >
+          <span className="task-name">Задания по стейкингу</span>
+          <span className="task-count">5 &gt;</span>
+        </div>
+        <div
+          className={`task-item ${!academyCompleted && 'disabled'}`}
+          onClick={() => handleTaskClick('farming')}
+        >
+          <span className="task-name">Задания по фармингу</span>
+          <span className="task-count">5 &gt;</span>
+        </div>
       </div>
     </div>
   );
