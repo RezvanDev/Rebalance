@@ -4,7 +4,7 @@ import { useTelegram } from "../context/TelegramContext";
 import axios from 'axios';
 import '../styles/TasksPage.css';
 
-const API_URL = 'https://f2a6-202-79-184-241.ngrok-free.app/api'; // Замените на URL вашего API
+const API_URL = 'https://f2a6-202-79-184-241.ngrok-free.app/api'; // Замените на актуальный URL вашего API
 
 interface Task {
   id: number;
@@ -19,6 +19,8 @@ const TasksPage: React.FC = () => {
   const navigate = useNavigate();
   const [academyCompleted, setAcademyCompleted] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const isCompleted = localStorage.getItem('academyCompleted') === 'true';
@@ -36,17 +38,21 @@ const TasksPage: React.FC = () => {
   }, [tg, navigate]);
 
   const fetchTasks = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const response = await axios.get(`${API_URL}/tasks`);
-      if (Array.isArray(response.data.tasks)) {
+      console.log('API response:', response.data); // Для отладки
+      if (response.data && Array.isArray(response.data.tasks)) {
         setTasks(response.data.tasks);
       } else {
-        console.error('Received data is not an array:', response.data);
-        setTasks([]);
+        throw new Error('Received data is not in the expected format');
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      setTasks([]);
+      setError('Failed to load tasks. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,6 +80,14 @@ const TasksPage: React.FC = () => {
       }
     }
   };
+
+  if (loading) {
+    return <div className="loading">Loading tasks...</div>;
+  }
+
+  if (error) {
+    return <div className="error">Error: {error}</div>;
+  }
 
   return (
     <div className="tasks-container">
