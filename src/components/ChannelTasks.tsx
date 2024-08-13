@@ -1,21 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import axios from 'axios';
-import { BASE_URL } from '../constants/baseUrl';
+import { API_URL } from '../config/apiConfig';
 import '../styles/ChannelTasks.css';
 
-interface Task {
+interface ChannelTask {
   id: number;
   title: string;
   reward: string;
+  channelUsername: string;
   completed: boolean;
 }
 
 const ChannelTasks: React.FC = () => {
-  const { tg } = useTelegram();
+  const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<ChannelTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,63 +39,55 @@ const ChannelTasks: React.FC = () => {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/api/tasks`, { params: { type: 'CHANNEL' } });
-      setTasks(response.data.tasks || []);
+      const response = await axios.get(`${API_URL}/tasks?type=CHANNEL`);
+      setTasks(response.data.tasks);
       setError(null);
     } catch (err) {
-      console.error('Error fetching tasks:', err);
-      setError('Ошибка при загрузке заданий');
+      console.error('Error fetching channel tasks:', err);
+      setError('Ошибка при загрузке заданий по каналам');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleTaskClick = async (taskId: number) => {
+  const handleSubscribe = async (taskId: number, channelUsername: string) => {
+    // Здесь можно добавить логику подписки на канал
+    window.open(`https://t.me/${channelUsername}`, '_blank');
+    
+    // После подписки отмечаем задание как выполненное
     try {
-      await axios.post(`${BASE_URL}/api/tasks/${taskId}/complete`);
-      setTasks(tasks.map(task => 
-        task.id === taskId ? { ...task, completed: true } : task
-      ));
-    } catch (err) {
-      console.error('Error completing task:', err);
+      await axios.post(`${API_URL}/tasks/${taskId}/complete`, null, {
+        params: { telegramId: user?.id }
+      });
+      // Обновляем список заданий
+      fetchTasks();
+    } catch (error) {
+      console.error('Error completing task:', error);
     }
   };
 
   if (loading) {
-    return <div>Загрузка заданий...</div>;
+    return <div>Загрузка заданий по каналам...</div>;
   }
 
   if (error) {
-    return <div className="error-message">{error}</div>;
-  }
-
-  if (tasks.length === 0) {
-    return <div>Нет доступных заданий по каналам</div>;
+    return <div>{error}</div>;
   }
 
   return (
     <div className="channel-tasks-container">
-      <div className="channel-tasks-header">
-        <h1>Задания по каналам</h1>
-        <button onClick={fetchTasks}>Обновить</button>
-      </div>
+      <h1>Задания по каналам</h1>
       <div className="channel-list">
         {tasks.map((task) => (
-          <div
-            key={task.id}
-            className={`channel-item ${task.completed ? 'completed' : ''}`}
-            onClick={() => !task.completed && handleTaskClick(task.id)}
-          >
-            <div className="channel-icon">📢</div>
-            <div className="channel-info">
-              <span className="channel-name">{task.title}</span>
-              <span className="channel-reward">{task.reward}</span>
-            </div>
-            {task.completed ? (
-              <span className="completed-icon">✓</span>
-            ) : (
-              <span className="arrow-icon">›</span>
+          <div key={task.id} className={`channel-item ${task.completed ? 'completed' : ''}`}>
+            <span className="channel-name">{task.title}</span>
+            <span className="channel-reward">{task.reward}</span>
+            {!task.completed && (
+              <button onClick={() => handleSubscribe(task.id, task.channelUsername)}>
+                Подписаться
+              </button>
             )}
+            {task.completed && <span className="completed-icon">✓</span>}
           </div>
         ))}
       </div>

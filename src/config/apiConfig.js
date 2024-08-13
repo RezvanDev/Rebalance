@@ -1,1 +1,1 @@
-REACT_APP_API_URL=https://f2a6-202-79-184-241.ngrok-free.app/api
+API_URL= "https://f2a6-202-79-184-241.ngrok-free.app/api"
