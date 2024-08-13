@@ -38,9 +38,15 @@ const TasksPage: React.FC = () => {
   const fetchTasks = async () => {
     try {
       const response = await axios.get(`${API_URL}/tasks`);
-      setTasks(response.data);
+      if (Array.isArray(response.data.tasks)) {
+        setTasks(response.data.tasks);
+      } else {
+        console.error('Received data is not an array:', response.data);
+        setTasks([]);
+      }
     } catch (error) {
       console.error('Error fetching tasks:', error);
+      setTasks([]);
     }
   };
 
@@ -48,9 +54,24 @@ const TasksPage: React.FC = () => {
     navigate('/reba-academy');
   };
 
-  const handleTaskClick = (taskId: number, taskType: string) => {
+  const handleTaskClick = (taskType: string) => {
     if (academyCompleted) {
-      navigate(`/${taskType.toLowerCase()}-task/${taskId}`);
+      switch (taskType) {
+        case 'channels':
+          navigate('/channel-tasks');
+          break;
+        case 'tokens':
+          navigate('/token-tasks');
+          break;
+        case 'staking':
+          navigate('/staking-tasks');
+          break;
+        case 'farming':
+          navigate('/farming-tasks');
+          break;
+        default:
+          break;
+      }
     }
   };
 
@@ -69,16 +90,34 @@ const TasksPage: React.FC = () => {
         </p>
       </div>
       <div className="task-list">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className={`task-item ${!academyCompleted && 'disabled'}`}
-            onClick={() => handleTaskClick(task.id, task.type)}
-          >
-            <span className="task-name">{task.name}</span>
-            <span className="task-reward">{task.reward}</span>
-          </div>
-        ))}
+        <div
+          className={`task-item ${!academyCompleted && 'disabled'}`}
+          onClick={() => handleTaskClick('channels')}
+        >
+          <span className="task-name">Задания по каналам</span>
+          <span className="task-count">{tasks.filter(task => task.type === 'CHANNEL').length} &gt;</span>
+        </div>
+        <div
+          className={`task-item ${!academyCompleted && 'disabled'}`}
+          onClick={() => handleTaskClick('tokens')}
+        >
+          <span className="task-name">Задания по токенам</span>
+          <span className="task-count">{tasks.filter(task => task.type === 'TOKEN').length} &gt;</span>
+        </div>
+        <div
+          className={`task-item ${!academyCompleted && 'disabled'}`}
+          onClick={() => handleTaskClick('staking')}
+        >
+          <span className="task-name">Задания по стейкингу</span>
+          <span className="task-count">0 &gt;</span>
+        </div>
+        <div
+          className={`task-item ${!academyCompleted && 'disabled'}`}
+          onClick={() => handleTaskClick('farming')}
+        >
+          <span className="task-name">Задания по фармингу</span>
+          <span className="task-count">0 &gt;</span>
+        </div>
       </div>
     </div>
   );
