@@ -9,6 +9,8 @@ import axios from 'axios';
 import { API_URL } from '../config/apiConfig';
 import "../styles/ChannelTasks.css";
 
+console.log('API_URL:', API_URL);
+
 interface Channel {
   id: number;
   name: string;
@@ -49,6 +51,7 @@ const ChannelTasks: React.FC = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/tasks?type=CHANNEL`);
+      console.log('API response:', response.data); // Добавляем логирование ответа
       if (response.data && Array.isArray(response.data.tasks)) {
         const channelTasks = response.data.tasks.map((task: any) => ({
           id: task.id,
@@ -61,6 +64,7 @@ const ChannelTasks: React.FC = () => {
         setChannels(channelTasks);
         setError(null);
       } else {
+        console.error('Unexpected response format:', response.data);
         throw new Error('Invalid response format');
       }
     } catch (err) {
@@ -122,20 +126,29 @@ const ChannelTasks: React.FC = () => {
   return (
     <div className="channel-tasks-container">
       {message && <div className="message">{message}</div>}
+      {error && <div className="error">{error}</div>}
       <div className="channel-tasks-header">
         <h1>Задания по каналам</h1>
         <p>Подпишитесь на каналы, чтобы получить бонусы</p>
         <button className="refresh-button" onClick={handleRefresh}>↻</button>
       </div>
-      <div className="channel-list">
-        {channels.map((channel) => (
-          <ChannelTaskCard
-            key={channel.id}
-            {...channel}
-            onSubscribe={handleSubscribe}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div>Загрузка заданий по каналам...</div>
+      ) : (
+        <div className="channel-list">
+          {channels.length > 0 ? (
+            channels.map((channel) => (
+              <ChannelTaskCard
+                key={channel.id}
+                {...channel}
+                onSubscribe={handleSubscribe}
+              />
+            ))
+          ) : (
+            <div>Нет доступных заданий по каналам</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
