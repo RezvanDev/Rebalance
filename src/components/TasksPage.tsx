@@ -4,22 +4,21 @@ import { useTelegram } from "../context/TelegramContext";
 import axios from 'axios';
 import '../styles/TasksPage.css';
 
-const API_URL = 'https://f2a6-202-79-184-241.ngrok-free.app/api'; // Замените на актуальный URL вашего API
+const API_URL = 'https://f2a6-202-79-184-241.ngrok-free.app/api'; // Замените на ваш реальный URL API
 
 interface Task {
   id: number;
   type: 'CHANNEL' | 'TOKEN';
-  name: string;
+  title: string;
   reward: string;
-  description: string;
 }
 
 const TasksPage: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
   const [academyCompleted, setAcademyCompleted] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [channelTasksCount, setChannelTasksCount] = useState<number | null>(null);
+  const [tokenTasksCount, setTokenTasksCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,7 +28,6 @@ const TasksPage: React.FC = () => {
       tg.BackButton.show();
       tg.BackButton.onClick(() => navigate('/main-menu'));
     }
-    fetchTasks();
     return () => {
       if (tg && tg.BackButton) {
         tg.BackButton.offClick();
@@ -37,38 +35,47 @@ const TasksPage: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const fetchTasks = async () => {
-    setLoading(true);
-    setError(null);
+  const handleAcademyClick = () => {
+    navigate('/reba-academy');
+  };
+
+  const fetchTasks = async (type: 'CHANNEL' | 'TOKEN') => {
     try {
-      const response = await axios.get(`${API_URL}/tasks`);
-      console.log('API response:', response.data); // Для отладки
+      const response = await axios.get(`${API_URL}/tasks?type=${type}`);
       if (response.data && Array.isArray(response.data.tasks)) {
-        setTasks(response.data.tasks);
-      } else {
-        throw new Error('Received data is not in the expected format');
+        return response.data.tasks.length;
       }
+      throw new Error('Invalid response format');
     } catch (error) {
-      console.error('Error fetching tasks:', error);
-      setError('Failed to load tasks. Please try again later.');
-    } finally {
-      setLoading(false);
+      console.error(`Error fetching ${type} tasks:`, error);
+      setError(`Failed to load ${type.toLowerCase()} tasks. Please try again.`);
+      return null;
     }
   };
 
-  const handleAcademyClick = () => {
-    navigate('/reba-academy');
+  const handleChannelTasksClick = async () => {
+    if (academyCompleted) {
+      const count = await fetchTasks('CHANNEL');
+      setChannelTasksCount(count);
+      if (count !== null) {
+        navigate('/channel-tasks');
+      }
+    }
+  };
+
+  const handleTokenTasksClick = async () => {
+    if (academyCompleted) {
+      const count = await fetchTasks('TOKEN');
+      setTokenTasksCount(count);
+      if (count !== null) {
+        navigate('/token-tasks');
+      }
+    }
   };
 
   const handleTaskClick = (taskType: string) => {
     if (academyCompleted) {
       switch (taskType) {
-        case 'channels':
-          navigate('/channel-tasks');
-          break;
-        case 'tokens':
-          navigate('/token-tasks');
-          break;
         case 'staking':
           navigate('/staking-tasks');
           break;
@@ -81,17 +88,10 @@ const TasksPage: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return <div className="loading">Loading tasks...</div>;
-  }
-
-  if (error) {
-    return <div className="error">Error: {error}</div>;
-  }
-
   return (
     <div className="tasks-container">
       <h1 className="tasks-title">Выполняйте задания и получайте токены</h1>
+      {error && <div className="error-message">{error}</div>}
       <div className="task-section" onClick={handleAcademyClick}>
         <div className="task-header">
           <h2 className="section-title">База – Академия REBA</h2>
@@ -106,31 +106,31 @@ const TasksPage: React.FC = () => {
       <div className="task-list">
         <div
           className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={() => handleTaskClick('channels')}
+          onClick={handleChannelTasksClick}
         >
           <span className="task-name">Задания по каналам</span>
-          <span className="task-count">{tasks.filter(task => task.type === 'CHANNEL').length} &gt;</span>
+          <span className="task-count">{channelTasksCount !== null ? channelTasksCount : '...'} &gt;</span>
         </div>
         <div
           className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={() => handleTaskClick('tokens')}
+          onClick={handleTokenTasksClick}
         >
           <span className="task-name">Задания по токенам</span>
-          <span className="task-count">{tasks.filter(task => task.type === 'TOKEN').length} &gt;</span>
+          <span className="task-count">{tokenTasksCount !== null ? tokenTasksCount : '...'} &gt;</span>
         </div>
         <div
           className={`task-item ${!academyCompleted && 'disabled'}`}
           onClick={() => handleTaskClick('staking')}
         >
           <span className="task-name">Задания по стейкингу</span>
-          <span className="task-count">0 &gt;</span>
+          <span className="task-count">5 &gt;</span>
         </div>
         <div
           className={`task-item ${!academyCompleted && 'disabled'}`}
           onClick={() => handleTaskClick('farming')}
         >
           <span className="task-name">Задания по фармингу</span>
-          <span className="task-count">0 &gt;</span>
+          <span className="task-count">5 &gt;</span>
         </div>
       </div>
     </div>
