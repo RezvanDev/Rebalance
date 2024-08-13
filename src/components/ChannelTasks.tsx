@@ -9,8 +9,6 @@ import axios from 'axios';
 import { API_URL } from '../config/apiConfig';
 import "../styles/ChannelTasks.css";
 
-console.log('API_URL:', API_URL);
-
 interface Channel {
   id: number;
   name: string;
@@ -50,8 +48,12 @@ const ChannelTasks: React.FC = () => {
   const fetchChannelTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/tasks?type=CHANNEL`);
-      console.log('API response:', response.data); // Добавляем логирование ответа
+      const response = await axios.get(`${API_URL}/tasks?type=CHANNEL`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      console.log('API response:', response.data);
       if (response.data && Array.isArray(response.data.tasks)) {
         const channelTasks = response.data.tasks.map((task: any) => ({
           id: task.id,
@@ -69,6 +71,10 @@ const ChannelTasks: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching channel tasks:', err);
+      if (axios.isAxiosError(err) && err.response) {
+        console.error('Error response:', err.response.data);
+        console.error('Error status:', err.response.status);
+      }
       setError('Ошибка при загрузке заданий по каналам');
     } finally {
       setLoading(false);
