@@ -11,46 +11,46 @@ import { BASE_URL } from "../constants/baseUrl";
 
 interface Channel {
   id: number;
-  name: string;
+  title: string;
   reward: string;
   completed: boolean;
   link: string;
-  channelLink: string;
+  channelUsername: string;
 }
 
 const ChannelTasks: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"))
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
   const { addTransaction } = useTransactions();
   const [message, setMessage] = useState<string | null>(null);
   const { fetchTask } = useActions();
-  const { userData } = useTypeSelector(
-    (state) => state.user
-  );
-  const { tasks, loading } = useTypeSelector((state) => state.tasks);
+  const { userData } = useTypeSelector((state) => state.user);
+  const { tasks, loading, error } = useTypeSelector((state) => state.tasks);
 
   const completeTask = async (id: number) => {
-    //создание пользователя
     try {
-      const response = await axios
-        .post(`${BASE_URL}/api/tasks/${id}/complete`, null, {
+      const response = await axios.post(
+        `${BASE_URL}/api/tasks/${id}/complete`,
+        null,
+        {
           params: {
             telegramId: user.telegramId,
           },
-        })
-        .then((response) => console.log(response.data))
-        .catch((err) => console.log(err));
-
-      return response;
+        }
+      );
+      console.log("Task completion response:", response.data);
+      return response.data;
     } catch (error) {
-      console.log("Error sending wallet data:", error);
+      console.error("Error completing task:", error);
+      throw error;
     }
   };
 
   useEffect(() => {
+    console.log("Fetching channel tasks...");
     fetchTask("CHANNEL");
-  }, []);
+  }, [fetchTask]);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -69,52 +69,44 @@ const ChannelTasks: React.FC = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const handleSubscribe = (id: number) => {
-    const channel = tasks.find((c) => c.id === id);
+  const handleSubscribe = async (id: number) => {
+    const channel = tasks.find((c) => c.id === id) as Channel;
 
     if (channel) {
-      completeTask(id, userData.telegramId);
-      addTransaction({
-        type: "Получение",
-        amount: `${channel} LIBRA`,
-        description: `Подписка на канал ${channel.title}`,
-      });
-      showMessage(
-        `Вы получили ${channel.reward} за подписку на ${channel.title}!`
-      );
+      try {
+        await completeTask(id);
+        addTransaction({
+          type: "Получение",
+          amount: `${channel.reward} LIBRA`,
+          description: `Подписка на канал ${channel.title}`,
+        });
+        showMessage(
+          `Вы получили ${channel.reward} за подписку на ${channel.title}!`
+        );
+        // Обновляем список задач после выполнения
+        fetchTask("CHANNEL");
+      } catch (error) {
+        console.error("Error subscribing to channel:", error);
+        showMessage("Произошла ошибка при выполнении задания");
+      }
     }
-
-    // if (channel && user) {
-    //   const rewardAmount = parseInt(channel.reward.split(' ')[0]);
-    //   addToBalance(rewardAmount);
-    //   updateChannelRewards(rewardAmount);
-
-    //   // Добавляем транзакцию
-    //   addTransaction({
-    //     type: 'Получение',
-    //     amount: `${rewardAmount} LIBRA`,
-    //     description: `Подписка на канал ${channel.title}`
-    //   });
-
-    //   showMessage(`Вы получили ${channel.reward} за подписку на ${channel.title}!`);
-
-    //   // Сохраняем ID выполненного задания в localStorage
-    //   const completedChannels = JSON.parse(localStorage.getItem(`completedChannels_${user.id}`) || '[]');
-    //   completedChannels.push(id);
-    //   localStorage.setItem(`completedChannels_${user.id}`, JSON.stringify(completedChannels));
-
-    // Удаляем канал из списка
-    // setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
-    // }
   };
 
   const handleRefresh = () => {
     showMessage("Обновление списка каналов...");
-    // Здесь можно добавить логику для обновления списка каналов
+    fetchTask("CHANNEL");
   };
 
   if (loading) {
-    return <div>Загрузка...</div>;
+    return <div>Загрузка заданий...</div>;
+  }
+
+  if (error) {
+    return <div>Ошибка при загрузке заданий: {error}</div>;
+  }
+
+  if (tasks.length === 0) {
+    return <div>Нет доступных заданий по каналам</div>;
   }
 
   return (

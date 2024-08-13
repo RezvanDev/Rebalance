@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import TokenTaskCard from '../card/TokenTaskCard';
-import { tokenTasks } from '../config/tokenTasks';
 import '../styles/TokenTasks.css';
 import { useActions } from '../hooks/useActions';
 import { useTypeSelector } from '../hooks/useTypeSelector';
@@ -11,13 +10,23 @@ const TokenTasks: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
   const { fetchTask } = useActions();
-  const { tasks } = useTypeSelector((state) => state.tasks);
+  const { tasks, loading, error } = useTypeSelector((state) => state.tasks);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchTask("TOKEN");
-  }, []);
+    const loadTasks = async () => {
+      try {
+        await fetchTask("TOKEN");
+      } catch (err) {
+        console.error("Error fetching tasks:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadTasks();
+  }, [fetchTask]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (tg && tg.BackButton) {
       tg.BackButton.show();
       tg.BackButton.onClick(() => navigate('/tasks'));
@@ -28,6 +37,18 @@ const TokenTasks: React.FC = () => {
       }
     };
   }, [tg, navigate]);
+
+  if (isLoading) {
+    return <div>Loading tasks...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading tasks: {error}</div>;
+  }
+
+  if (tasks.length === 0) {
+    return <div>No tasks available at the moment.</div>;
+  }
 
   return (
     <div className="token-tasks-container">

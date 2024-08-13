@@ -6,17 +6,14 @@ const initialState: any = {
   error: null,
 };
 
-export const tasksReducer = (
-  state = initialState,
-  action: any
-): any => {
+export const tasksReducer = (state = initialState, action: any): any => {
   switch (action.type) {
     case TaskActionTypes.FETCH_TASK:
-      return { loading: true, error: null, tasks: [] };
+      return { ...state, loading: true, error: null };
     case TaskActionTypes.FETCH_TASK_SUCCESS:
       return { loading: false, error: null, tasks: action.payload };
     case TaskActionTypes.FETCH_TASK_ERROR:
-      return { loading: false, error: action.payload, tasks: [] };
+      return { ...state, loading: false, error: action.payload };
     default:
       return state;
   }
