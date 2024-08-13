@@ -49,18 +49,47 @@ const MainMenu: React.FC = () => {
 
   const handleInvite = () => {
     const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
-    if (tg && tg.shareUrl) {
+    console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
+
+    if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+      console.log("Используем openTelegramLink");
+      window.Telegram.WebApp.openTelegramLink(
+        `https://t.me/share/url?url=${encodeURIComponent(referralLink)}`
+      );
+    } else if (window.Telegram.WebApp && window.Telegram.WebApp.shareUrl) {
+      console.log("Используем WebApp.shareUrl");
+      window.Telegram.WebApp.shareUrl(referralLink);
+    } else if (tg && tg.shareUrl) {
+      console.log("Используем tg.shareUrl");
       tg.shareUrl(referralLink);
+    } else if (navigator.share) {
+      console.log("Используем navigator.share");
+      navigator
+        .share({
+          title: "Приглашение",
+          text: `Присоединяйтесь к нашему боту по этой ссылке: ${referralLink}`,
+          url: referralLink,
+        })
+        .then(() => {
+          console.log("Успешно поделились");
+        })
+        .catch((error) => {
+          console.log("Ошибка шаринга", error);
+          handleCopyReferralLink();
+        });
     } else {
+      console.log("Методы шаринга недоступны, копируем ссылку");
       handleCopyReferralLink();
     }
   };
 
   const handleCopyReferralLink = () => {
     const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
+    console.log("Копирование ссылки:", referralLink);
     navigator.clipboard
       .writeText(referralLink)
       .then(() => {
+        console.log("Ссылка успешно скопирована");
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 3000);
       })
@@ -137,6 +166,20 @@ const MainMenu: React.FC = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="card">
+        <h3 className="list-title">Как купить или продать LIBRA?</h3>
+        <ol className="ordered-list">
+          <li>Перейти в Dedust.io</li>
+          <li>Подключите свой кошелёк</li>
+          <li>Перейдите в раздел «Swap»</li>
+          <li>Обменяйте LIBRA на другую монету или другую монету на LIBRA</li>
+          <li>
+            LIBRA можно купить или продать только за другие токены. Мы
+            рекомендуем использовать TON.
+          </li>
+        </ol>
       </div>
 
       <div className="card">
