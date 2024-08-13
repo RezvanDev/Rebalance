@@ -42,12 +42,17 @@ const TasksPage: React.FC = () => {
   const fetchTasks = async (type: 'CHANNEL' | 'TOKEN') => {
     try {
       const response = await axios.get(`${API_URL}/tasks?type=${type}`);
-      if (response.data && Array.isArray(response.data.tasks)) {
+      console.log(`Response for ${type} tasks:`, response.data); // Добавлено для отладки
+      if (response.data && response.data.success && Array.isArray(response.data.tasks)) {
         return response.data.tasks.length;
       }
       throw new Error('Invalid response format');
     } catch (error) {
       console.error(`Error fetching ${type} tasks:`, error);
+      if (axios.isAxiosError(error) && error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+      }
       setError(`Failed to load ${type.toLowerCase()} tasks. Please try again.`);
       return null;
     }
@@ -55,6 +60,7 @@ const TasksPage: React.FC = () => {
 
   const handleChannelTasksClick = async () => {
     if (academyCompleted) {
+      setError(null); // Сбрасываем предыдущие ошибки
       const count = await fetchTasks('CHANNEL');
       setChannelTasksCount(count);
       if (count !== null) {
@@ -65,6 +71,7 @@ const TasksPage: React.FC = () => {
 
   const handleTokenTasksClick = async () => {
     if (academyCompleted) {
+      setError(null); // Сбрасываем предыдущие ошибки
       const count = await fetchTasks('TOKEN');
       setTokenTasksCount(count);
       if (count !== null) {
