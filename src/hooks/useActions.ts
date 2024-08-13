@@ -1,7 +1,7 @@
 import { useDispatch } from "react-redux"
 import { bindActionCreators } from "redux"
-import * as UserActionCreators from "../redux/store/actionCreators/user"
-import * as TaskActionCreators from "../redux/store/actionCreators/task"
+import * as UserActionCreators from "../redux/store/actions/user"
+import * as TaskActionCreators from "../redux/store/actions/taskActions"
 
 
 export const useActions = ():any => {

@@ -1,61 +1,29 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useTelegram } from "../context/TelegramContext";
-import ChannelTaskCard from "../card/ChannelTaskCard";
-import { useTransactions } from "../hooks/useTransactions";
-import "../styles/ChannelTasks.css";
-import { useActions } from "../hooks/useActions";
-import { useTypeSelector } from "../hooks/useTypeSelector";
-import axios from "axios";
-import { BASE_URL } from "../constants/baseUrl";
-
-interface Channel {
-  id: number;
-  title: string;
-  reward: string;
-  completed: boolean;
-  link: string;
-  channelUsername: string;
-}
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTelegram } from '../context/TelegramContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../redux/store/reducers';
+import { fetchTasksAction, completeTaskAction } from '../redux/store/actions/taskActions';
+import { TaskType } from '../types/task';
+import TaskCard from './TaskCard';
+import LoadingSpinner from './LoadingSpinner';
+import '../styles/ChannelTasks.css';
 
 const ChannelTasks: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const { addTransaction } = useTransactions();
-  const [message, setMessage] = useState<string | null>(null);
-  const { fetchTask } = useActions();
-  const { userData } = useTypeSelector((state) => state.user);
-  const { tasks, loading, error } = useTypeSelector((state) => state.tasks);
-
-  const completeTask = async (id: number) => {
-    try {
-      const response = await axios.post(
-        `${BASE_URL}/api/tasks/${id}/complete`,
-        null,
-        {
-          params: {
-            telegramId: user.telegramId,
-          },
-        }
-      );
-      console.log("Task completion response:", response.data);
-      return response.data;
-    } catch (error) {
-      console.error("Error completing task:", error);
-      throw error;
-    }
-  };
+  const dispatch = useDispatch();
+  const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    console.log("Fetching channel tasks...");
-    fetchTask("CHANNEL");
-  }, [fetchTask]);
+    dispatch(fetchTasksAction(TaskType.CHANNEL));
+  }, [dispatch]);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
       tg.BackButton.show();
-      tg.BackButton.onClick(() => navigate("/tasks"));
+      tg.BackButton.onClick(() => navigate('/tasks'));
     }
     return () => {
       if (tg && tg.BackButton) {
@@ -64,68 +32,58 @@ const ChannelTasks: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const showMessage = (msg: string) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(null), 3000);
-  };
-
-  const handleSubscribe = async (id: number) => {
-    const channel = tasks.find((c) => c.id === id) as Channel;
-
-    if (channel) {
+  const handleTaskClick = async (taskId: number) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task && !task.completed) {
       try {
-        await completeTask(id);
-        addTransaction({
-          type: "Получение",
-          amount: `${channel.reward} LIBRA`,
-          description: `Подписка на канал ${channel.title}`,
-        });
-        showMessage(
-          `Вы получили ${channel.reward} за подписку на ${channel.title}!`
-        );
-        // Обновляем список задач после выполнения
-        fetchTask("CHANNEL");
+        await dispatch(completeTaskAction(taskId));
       } catch (error) {
-        console.error("Error subscribing to channel:", error);
-        showMessage("Произошла ошибка при выполнении задания");
+        console.error('Error completing task:', error);
       }
     }
   };
 
-  const handleRefresh = () => {
-    showMessage("Обновление списка каналов...");
-    fetchTask("CHANNEL");
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await dispatch(fetchTasksAction(TaskType.CHANNEL));
+    setRefreshing(false);
   };
 
-  if (loading) {
-    return <div>Загрузка заданий...</div>;
+  if (loading && !refreshing) {
+    return <LoadingSpinner />;
   }
 
   if (error) {
-    return <div>Ошибка при загрузке заданий: {error}</div>;
+    return <div className="error-message">Ошибка при загрузке заданий: {error}</div>;
   }
 
-  if (tasks.length === 0) {
-    return <div>Нет доступных заданий по каналам</div>;
+  const channelTasks = tasks.filter(task => task.type === TaskType.CHANNEL);
+
+  if (channelTasks.length === 0) {
+    return (
+      <div className="channel-tasks-container">
+        <div className="channel-tasks-header">
+          <h1>Задания по каналам</h1>
+          <button onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? 'Обновление...' : 'Обновить'}
+          </button>
+        </div>
+        <div className="no-tasks-message">Нет доступных заданий по каналам</div>
+      </div>
+    );
   }
 
   return (
     <div className="channel-tasks-container">
-      {message && <div className="message">{message}</div>}
       <div className="channel-tasks-header">
         <h1>Задания по каналам</h1>
-        <p>Подпишитесь на каналы, чтобы получить бонусы</p>
-        <button className="refresh-button" onClick={handleRefresh}>
-          ↻
+        <button onClick={handleRefresh} disabled={refreshing}>
+          {refreshing ? 'Обновление...' : 'Обновить'}
         </button>
       </div>
       <div className="channel-list">
-        {tasks.map((task) => (
-          <ChannelTaskCard
-            key={task.id}
-            {...task}
-            onSubscribe={handleSubscribe}
-          />
+        {channelTasks.map((task) => (
+          <TaskCard key={task.id} task={task} onClick={handleTaskClick} />
         ))}
       </div>
     </div>

@@ -1,21 +1,24 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import TokenTaskCard from '../card/TokenTaskCard';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../redux/store/reducers';
+import { fetchTasksAction } from '../redux/store/actions/taskActions';
+import { TaskType } from '../types/task';
+import TaskCard from './TaskCard';
+import LoadingSpinner from './LoadingSpinner';
 import '../styles/TokenTasks.css';
-import { useActions } from '../hooks/useActions';
-import { useTypeSelector } from '../hooks/useTypeSelector';
-import { completeTask } from '../api/taskApi';
 
 const TokenTasks: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
-  const { fetchTask } = useActions();
-  const { tasks, loading, error } = useTypeSelector((state) => state.tasks);
+  const dispatch = useDispatch();
+  const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchTask("TOKEN");
-  }, [fetchTask]);
+    dispatch(fetchTasksAction(TaskType.TOKEN));
+  }, [dispatch]);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -29,43 +32,51 @@ const TokenTasks: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const handleTaskAction = async (taskId: number) => {
-    try {
-      await completeTask(taskId);
-      fetchTask("TOKEN"); // Обновляем список задач
-    } catch (error) {
-      console.error('Error completing task:', error);
-    }
+  const handleTaskClick = (taskId: number) => {
+    navigate(`/token-task/${taskId}`);
   };
 
-  if (loading) {
-    return <div>Загрузка заданий...</div>;
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await dispatch(fetchTasksAction(TaskType.TOKEN));
+    setRefreshing(false);
+  };
+
+  if (loading && !refreshing) {
+    return <LoadingSpinner />;
   }
 
   if (error) {
-    return <div>Ошибка при загрузке заданий: {error}</div>;
+    return <div className="error-message">Ошибка при загрузке заданий: {error}</div>;
   }
 
-  if (tasks.length === 0) {
-    return <div>Нет доступных заданий по токенам</div>;
+  const tokenTasks = tasks.filter(task => task.type === TaskType.TOKEN);
+
+  if (tokenTasks.length === 0) {
+    return (
+      <div className="token-tasks-container">
+        <div className="token-tasks-header">
+          <h1>Задания по токенам</h1>
+          <button onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? 'Обновление...' : 'Обновить'}
+          </button>
+        </div>
+        <div className="no-tasks-message">Нет доступных заданий по токенам</div>
+      </div>
+    );
   }
 
   return (
     <div className="token-tasks-container">
       <div className="token-tasks-header">
         <h1>Задания по токенам</h1>
+        <button onClick={handleRefresh} disabled={refreshing}>
+          {refreshing ? 'Обновление...' : 'Обновить'}
+        </button>
       </div>
       <div className="token-list">
-        {tasks.map((task) => (
-          <TokenTaskCard
-            key={task.id}
-            id={task.id}
-            name={task.title}
-            reward={task.reward}
-            link={`/token-task/${task.id}`}
-            completed={task.completed}
-            onAction={handleTaskAction}
-          />
+        {tokenTasks.map((task) => (
+          <TaskCard key={task.id} task={task} onClick={handleTaskClick} />
         ))}
       </div>
     </div>

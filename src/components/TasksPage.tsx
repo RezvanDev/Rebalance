@@ -1,94 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTelegram } from "../context/TelegramContext";
+import { useTelegram } from '../context/TelegramContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../redux/store/reducers';
+import { fetchTasksAction } from '../redux/store/actions/taskActions';
+import { TaskType } from '../types/task';
 import '../styles/TasksPage.css';
 
 const TasksPage: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
-  const [academyCompleted, setAcademyCompleted] = useState(false);
+  const dispatch = useDispatch();
+  const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
 
   useEffect(() => {
-    const isCompleted = localStorage.getItem('academyCompleted') === 'true';
-    setAcademyCompleted(isCompleted);
-    if (tg) {
+    dispatch(fetchTasksAction(TaskType.CHANNEL));
+    dispatch(fetchTasksAction(TaskType.TOKEN));
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (tg && tg.BackButton) {
       tg.BackButton.show();
       tg.BackButton.onClick(() => navigate('/main-menu'));
     }
     return () => {
-      if (tg) {
+      if (tg && tg.BackButton) {
         tg.BackButton.offClick();
       }
     };
   }, [tg, navigate]);
 
-  const handleAcademyClick = () => {
-    navigate('/reba-academy');
-  };
+  if (loading) {
+    return <div>Загрузка заданий...</div>;
+  }
 
-  const handleTaskClick = (taskType: string) => {
-    if (academyCompleted) {
-      switch (taskType) {
-        case 'channels':
-          navigate('/channel-tasks');
-          break;
-        case 'tokens':
-          navigate('/token-tasks');
-          break;
-        case 'staking':
-          navigate('/staking-tasks');
-          break;
-        case 'farming':
-          navigate('/farming-tasks');
-          break;
-        default:
-          break;
-      }
-    }
-  };
+  if (error) {
+    return <div>Ошибка при загрузке заданий: {error}</div>;
+  }
 
   return (
-    <div className="tasks-container">
-      <h1 className="tasks-title">Выполняйте задания и получайте токены</h1>
-      <div className="task-section" onClick={handleAcademyClick}>
-        <div className="task-header">
-          <h2 className="section-title">База – Академия REBA</h2>
-          {academyCompleted && <span className="completed-icon">✅</span>}
+    <div className="tasks-page-container">
+      <h1>Задания</h1>
+      <div className="task-types">
+        <div className="task-type" onClick={() => navigate('/channel-tasks')}>
+          <h2>Задания по каналам</h2>
+          <p>{tasks.filter(task => task.type === TaskType.CHANNEL).length} заданий</p>
         </div>
-        <p className="section-description">
-          {academyCompleted
-            ? "Академия пройдена. Нажмите, чтобы повторить."
-            : "Для доступа к заданиям, сперва необходимо пройти академию"}
-        </p>
-      </div>
-      <div className="task-list">
-        <div 
-          className={`task-item ${!academyCompleted && 'disabled'}`} 
-          onClick={() => handleTaskClick('channels')}
-        >
-          <span className="task-name">Задания по каналам</span>
-          <span className="task-count">5 &gt;</span>
-        </div>
-        <div 
-          className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={() => handleTaskClick('tokens')}
-        >
-          <span className="task-name">Задания по токенам</span>
-          <span className="task-count">5 &gt;</span>
-        </div>
-        <div 
-          className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={() => handleTaskClick('staking')}
-        >
-          <span className="task-name">Задания по стейкингу</span>
-          <span className="task-count">5 &gt;</span>
-        </div>
-        <div 
-          className={`task-item ${!academyCompleted && 'disabled'}`}
-          onClick={() => handleTaskClick('farming')}
-        >
-          <span className="task-name">Задания по фармингу</span>
-          <span className="task-count">5 &gt;</span>
+        <div className="task-type" onClick={() => navigate('/token-tasks')}>
+          <h2>Задания по токенам</h2>
+          <p>{tasks.filter(task => task.type === TaskType.TOKEN).length} заданий</p>
         </div>
       </div>
     </div>

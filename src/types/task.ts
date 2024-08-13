@@ -1,24 +1,31 @@
+export enum TaskType {
+  CHANNEL = 'CHANNEL',
+  TOKEN = 'TOKEN'
+}
+
+export interface Task {
+  id: number;
+  type: TaskType;
+  title: string;
+  description: string;
+  reward: string;
+  completed: boolean;
+  channelUsername?: string;
+  tokenAddress?: string;
+  tokenAmount?: number;
+}
+
 export enum TaskActionTypes {
-  FETCH_TASK = "FETCH_TASK",
-  FETCH_TASK_SUCCESS = "FETCH_TASK_SUCCESS",
-  FETCH_TASK_ERROR = "FETCH_TASK_ERROR",
+  FETCH_TASKS = 'FETCH_TASKS',
+  FETCH_TASKS_SUCCESS = 'FETCH_TASKS_SUCCESS',
+  FETCH_TASKS_ERROR = 'FETCH_TASKS_ERROR',
+  COMPLETE_TASK = 'COMPLETE_TASK',
+  COMPLETE_TASK_SUCCESS = 'COMPLETE_TASK_SUCCESS',
+  COMPLETE_TASK_ERROR = 'COMPLETE_TASK_ERROR'
 }
 
-interface FetchTaskAction {
-  type: TaskActionTypes.FETCH_TASK;
+export interface TaskState {
+  tasks: Task[];
+  loading: boolean;
+  error: string | null;
 }
-
-interface FetchTaskSuccessAction {
-  type: TaskActionTypes.FETCH_TASK_SUCCESS;
-  payload: any[];
-}
-
-interface FetchTaskErrorAction {
-  type: TaskActionTypes.FETCH_TASK_ERROR;
-  payload: string;
-}
-
-export type StockAction =
-  | FetchTaskAction
-  | FetchTaskSuccessAction
-  | FetchTaskErrorAction;

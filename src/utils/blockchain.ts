@@ -1,5 +1,5 @@
-export const checkTokenOwnership = async (userId: number, tokenName: string): Promise<boolean> => {
-    // Здесь должна быть реальная логика проверки владения токеном в блокчейне
-    // Для примера, мы будем считать, что пользователь владеет токеном
-    return true;
-  };
+export const checkTokenOwnership = async (userId: string, tokenAddress: string, requiredAmount: number): Promise<boolean> => {
+  // Здесь должна быть реальная логика проверки владения токенами
+  // Для примера возвращаем true
+  return true;
+};
