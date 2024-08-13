@@ -33,7 +33,7 @@ const ChannelTasks: React.FC = () => {
   }, [tg, navigate]);
 
   const handleTaskClick = async (taskId: number) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks && tasks.find(t => t.id === taskId);
     if (task && !task.completed) {
       try {
         await dispatch(completeTaskAction(taskId));
@@ -57,7 +57,7 @@ const ChannelTasks: React.FC = () => {
     return <div className="error-message">Ошибка при загрузке заданий: {error}</div>;
   }
 
-  const channelTasks = tasks.filter(task => task.type === TaskType.CHANNEL);
+  const channelTasks = tasks && tasks.length > 0 ? tasks.filter(task => task.type === TaskType.CHANNEL) : [];
 
   if (channelTasks.length === 0) {
     return (

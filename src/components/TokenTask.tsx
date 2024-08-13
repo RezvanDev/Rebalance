@@ -50,7 +50,7 @@ const TokenTasks: React.FC = () => {
     return <div className="error-message">Ошибка при загрузке заданий: {error}</div>;
   }
 
-  const tokenTasks = tasks.filter(task => task.type === TaskType.TOKEN);
+  const tokenTasks = tasks && tasks.length > 0 ? tasks.filter(task => task.type === TaskType.TOKEN) : [];
 
   if (tokenTasks.length === 0) {
     return (

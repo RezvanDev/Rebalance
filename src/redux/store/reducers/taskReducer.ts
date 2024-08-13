@@ -11,7 +11,7 @@ export const tasksReducer = (state = initialState, action: any): TaskState => {
     case TaskActionTypes.FETCH_TASKS:
       return { ...state, loading: true, error: null };
     case TaskActionTypes.FETCH_TASKS_SUCCESS:
-      return { ...state, loading: false, tasks: action.payload };
+      return { ...state, loading: false, tasks: action.payload, error: null };
     case TaskActionTypes.FETCH_TASKS_ERROR:
       return { ...state, loading: false, error: action.payload };
     case TaskActionTypes.COMPLETE_TASK_SUCCESS:
