@@ -24,48 +24,24 @@ const MainMenu: React.FC = () => {
     }
   }, [tg]);
   
-  const addUser = async () => {
-    const walletAddress = tonConnectUI.account?.address;
-    try {
-      const response = await axios.post(`${BASE_URL}/api/auth/register`, null, {
-        params: {
-          telegramId: user?.id,
-          username: user?.username,
-          firstName: user?.username,
-          lastName: user?.username,
-          referredById: user?.id,
-          walletAddress,
-        },
-      });
-      console.log(response.data);
-      fetchUser(walletAddress);
-    } catch (error) {
-      console.log("Error sending wallet data:", error);
-    }
-  };
-
-  const fetchUser = async (address: string | undefined) => {
-    if (address) {
-      try {
-        const response = await axios.get(`${BASE_URL}/api/auth/user-by-address/${address}`);
-        setUserData(response.data.user);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    }
-  };
-
   useEffect(() => {
-    if (connected) {
-      console.log("Wallet connected successfully");
-      fetchUser(wallet?.address);
+    if (connected && wallet?.address) {
+      fetchUser(wallet.address);
     }
   }, [connected, wallet?.address]);
+
+  const fetchUser = async (address: string) => {
+    try {
+      const response = await axios.get(`${BASE_URL}/api/auth/user-by-address/${address}`);
+      setUserData(response.data.user);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   const handleConnectWallet = async () => {
     try {
       await connectWallet();
-      await addUser();
     } catch (error) {
       console.error("Failed to connect wallet:", error);
     }
@@ -73,47 +49,18 @@ const MainMenu: React.FC = () => {
 
   const handleInvite = () => {
     const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
-    console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
-
-    if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-      console.log("Используем openTelegramLink");
-      window.Telegram.WebApp.openTelegramLink(
-        `https://t.me/share/url?url=${encodeURIComponent(referralLink)}`
-      );
-    } else if (window.Telegram.WebApp && window.Telegram.WebApp.shareUrl) {
-      console.log("Используем WebApp.shareUrl");
-      window.Telegram.WebApp.shareUrl(referralLink);
-    } else if (tg && tg.shareUrl) {
-      console.log("Используем tg.shareUrl");
+    if (tg && tg.shareUrl) {
       tg.shareUrl(referralLink);
-    } else if (navigator.share) {
-      console.log("Используем navigator.share");
-      navigator
-        .share({
-          title: "Приглашение",
-          text: `Присоединяйтесь к нашему боту по этой ссылке: ${referralLink}`,
-          url: referralLink,
-        })
-        .then(() => {
-          console.log("Успешно поделились");
-        })
-        .catch((error) => {
-          console.log("Ошибка шаринга", error);
-          handleCopyReferralLink();
-        });
     } else {
-      console.log("Методы шаринга недоступны, копируем ссылку");
       handleCopyReferralLink();
     }
   };
 
   const handleCopyReferralLink = () => {
     const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
-    console.log("Копирование ссылки:", referralLink);
     navigator.clipboard
       .writeText(referralLink)
       .then(() => {
-        console.log("Ссылка успешно скопирована");
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 3000);
       })
@@ -137,10 +84,9 @@ const MainMenu: React.FC = () => {
           <source src={backgroundVideo} type="video/mp4" />
         </video>
         <h2 className="balance-title">Баланс</h2>
-        <p className="balance-amount">{userData?.balance} REBA</p>
-        <p className="balance-change">↑ 6,18% • $10,34</p>
+        <p className="balance-amount">{userData?.balance || 0} REBA</p>
         <p className="wallet-label">Кошелек</p>
-        <p className="wallet-address">{walletAddress ? walletAddress : ""}</p>
+        <p className="wallet-address">{walletAddress || ""}</p>
         {connected ? (
           <button className="withdraw-button">
             <span style={{ marginRight: "5px" }}>↑</span> Вывод
@@ -160,7 +106,7 @@ const MainMenu: React.FC = () => {
         <div className="referrals-header">
           <div>
             <h3 className="referrals-title">Рефералы</h3>
-            <p className="referrals-count">0</p>
+            <p className="referrals-count">{userData?.referralsCount || 0}</p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <button className="invite-button" onClick={handleInvite}>
@@ -185,26 +131,12 @@ const MainMenu: React.FC = () => {
               <tr key={level.level} className="table-row">
                 <td className="table-cell">{level.level}</td>
                 <td className="table-cell">{level.percentage}%</td>
-                <td className="table-cell">0</td>
-                <td className="table-cell">0 REBA</td>
+                <td className="table-cell">{userData?.referralsByLevel?.[level.level] || 0}</td>
+                <td className="table-cell">{userData?.rewardsByLevel?.[level.level] || 0} REBA</td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-
-      <div className="card">
-        <h3 className="list-title">Как купить или продать LIBRA?</h3>
-        <ol className="ordered-list">
-          <li>Перейти в Dedust.io</li>
-          <li>Подключите свой кошелёк</li>
-          <li>Перейдите в раздел «Swap»</li>
-          <li>Обменяйте LIBRA на другую монету или другую монету на LIBRA</li>
-          <li>
-            LIBRA можно купить или продать только за другие токены. Мы
-            рекомендуем использовать TON.
-          </li>
-        </ol>
       </div>
 
       <div className="card">

@@ -20,7 +20,7 @@ interface Task {
 }
 
 const TasksPage: React.FC = () => {
-  const { tg } = useTelegram();
+  const { tg, user } = useTelegram();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,33 +64,28 @@ const TasksPage: React.FC = () => {
     }
   };
 
-  const handleAdminClick = () => {
-    navigate('/admin');
-  };
-
   if (loading) {
-    return <div>Загрузка заданий...</div>;
+    return <div className="loading">Загрузка заданий...</div>;
   }
 
   if (error) {
-    return <div>Ошибка при загрузке заданий: {error}</div>;
+    return <div className="error">Ошибка при загрузке заданий: {error}</div>;
   }
 
   return (
     <div className="tasks-page-container">
       <h1>Доступные задания</h1>
-      <button onClick={handleAdminClick}>Админка</button>
       <div className="tasks-list">
         {tasks.map((task) => (
           <div key={task.id} className="task-item" onClick={() => handleTaskClick(task)}>
             <h3>{task.title}</h3>
             <p>{task.description}</p>
-            <p>Награда: {task.reward}</p>
-            {task.type === 'CHANNEL' && <p>Канал: @{task.channelUsername}</p>}
+            <p className="reward">Награда: {task.reward}</p>
+            {task.type === 'CHANNEL' && <p className="channel">Канал: @{task.channelUsername}</p>}
             {task.type === 'TOKEN' && (
               <>
-                <p>Требуемое количество токенов: {task.tokenAmount}</p>
-                <p>Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
+                <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>
+                <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
               </>
             )}
           </div>

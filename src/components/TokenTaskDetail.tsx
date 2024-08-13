@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import axios from 'axios';
-import { checkTokenOwnership } from '../utils/blockchain';
 import { BASE_URL } from '../constants/baseUrl';
 import '../styles/TokenTaskDetail.css';
 
@@ -15,12 +14,14 @@ interface Task {
   channelUsername?: string;
   tokenAddress?: string;
   tokenAmount?: number;
+  maxParticipants?: number;
+  currentParticipants?: number;
 }
 
 const TokenTaskDetail: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const { tokenId } = useParams<{ tokenId: string }>();
+  const { taskId } = useParams<{ taskId: string }>();
   const [task, setTask] = useState<Task | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [ownsToken, setOwnsToken] = useState(false);
@@ -29,12 +30,12 @@ const TokenTaskDetail: React.FC = () => {
 
   useEffect(() => {
     fetchTask();
-  }, [tokenId]);
+  }, [taskId]);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
       tg.BackButton.show();
-      tg.BackButton.onClick(() => navigate('/token-tasks'));
+      tg.BackButton.onClick(() => navigate('/tasks'));
     }
     return () => {
       if (tg && tg.BackButton) {
@@ -46,8 +47,9 @@ const TokenTaskDetail: React.FC = () => {
   const fetchTask = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/api/tasks/${tokenId}`);
+      const response = await axios.get(`${BASE_URL}/api/tasks/${taskId}`);
       setTask(response.data.task);
+      checkRequirements(response.data.task);
     } catch (error) {
       console.error('Error fetching task:', error);
       setMessage('Ошибка при загрузке задания');
@@ -56,89 +58,90 @@ const TokenTaskDetail: React.FC = () => {
     }
   };
 
-  const handleSubscribe = () => {
-    if (task && task.channelUsername) {
-      window.open(`https://t.me/${task.channelUsername}`, '_blank');
+  const checkRequirements = async (task: Task) => {
+    if (task.channelUsername) {
+      const subscribed = await checkChannelSubscription(task.channelUsername);
+      setIsSubscribed(subscribed);
     }
-  };
-
-  const handleBuyTokens = () => {
-    setMessage('Переход на страницу покупки токенов');
-  };
-
-  const handleCheckCompletion = async () => {
-    if (task && task.completed) {
-      setMessage('Вы уже выполнили это задание');
-      return;
-    }
-
-    if (task && user) {
-      const subscriptionStatus = await checkChannelSubscription(task.channelUsername || '');
-      const tokenOwnershipStatus = await checkTokenOwnership(user.id, task.tokenAddress || '', task.tokenAmount || 0);
-
-      setIsSubscribed(subscriptionStatus);
-      setOwnsToken(tokenOwnershipStatus);
-
-      if (subscriptionStatus && tokenOwnershipStatus) {
-        try {
-          await completeTask(task.id);
-          setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
-          setTimeout(() => navigate('/token-tasks'), 3000);
-        } catch (error) {
-          setMessage('Произошла ошибка при выполнении задания');
-        }
-      } else {
-        setMessage('Пожалуйста, выполните все шаги задания');
-      }
+    if (task.tokenAddress && task.tokenAmount) {
+      const hasTokens = await checkTokenOwnership(task.tokenAddress, task.tokenAmount);
+      setOwnsToken(hasTokens);
     }
   };
 
   const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
-    // Implement the logic to check channel subscription
-    return true; // Placeholder
+    try {
+      const response = await axios.get(`${BASE_URL}/api/telegram/check-subscription`, {
+        params: { telegramId: user?.id, channelUsername }
+      });
+      return response.data.isSubscribed;
+    } catch (error) {
+      console.error('Error checking channel subscription:', error);
+      return false;
+    }
   };
 
-  const completeTask = async (taskId: number) => {
+  const checkTokenOwnership = async (tokenAddress: string, requiredAmount: number): Promise<boolean> => {
     try {
-      await axios.post(`${BASE_URL}/api/tasks/${taskId}/complete`, null, {
-        params: { telegramId: user?.id }
+      const response = await axios.get(`${BASE_URL}/api/ton/check-balance`, {
+        params: { address: user?.walletAddress, tokenAddress, requiredAmount }
       });
-      setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
+      return response.data.hasEnoughTokens;
+    } catch (error) {
+      console.error('Error checking token ownership:', error);
+      return false;
+    }
+  };
+
+  const handleCompleteTask = async () => {
+    if (!task || !user) return;
+
+    try {
+      const response = await axios.post(`${BASE_URL}/api/tasks/${task.id}/complete`, null, {
+        params: { telegramId: user.id }
+      });
+      setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
+      setTask({ ...task, completed: true });
     } catch (error) {
       console.error('Error completing task:', error);
-      throw error;
+      setMessage('Произошла ошибка при выполнении задания');
     }
   };
 
   if (loading) {
-    return <div>Загрузка...</div>;
+    return <div className="loading">Загрузка...</div>;
   }
 
   if (!task) {
-    return <div>Задание не найдено</div>;
+    return <div className="error">Задание не найдено</div>;
   }
 
   return (
     <div className="token-task-detail">
-      <h1 className="task-name">{task.title}</h1>
-      <p className="task-description">{task.description}</p>
-      <div className="info-card">
-        <h2>Награда</h2>
-        <p className="reward">{task.reward}</p>
+      <h1>{task.title}</h1>
+      <p className="description">{task.description}</p>
+      <div className="task-info">
+        <p className="reward">Награда: {task.reward}</p>
+        <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>
+        <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
       </div>
-      <div className="info-card">
-        <h2>Задание</h2>
-        <div className="task-step" onClick={handleSubscribe}>
-          <p>1. Подписаться на канал {task.channelUsername}</p>
-          {isSubscribed ? <span className="completed">✓</span> : <span className="arrow">›</span>}
-        </div>
-        <div className="task-step" onClick={handleBuyTokens}>
-          <p>2. Купите минимум {task.tokenAmount} токенов</p>
-          {ownsToken ? <span className="completed">✓</span> : <span className="arrow">›</span>}
-        </div>
+      <div className="task-requirements">
+        <p>Требования:</p>
+        <ul>
+          <li className={isSubscribed ? 'completed' : ''}>
+            Подписаться на канал @{task.channelUsername}
+          </li>
+          <li className={ownsToken ? 'completed' : ''}>
+            Иметь {task.tokenAmount} токенов на балансе
+          </li>
+        </ul>
       </div>
-      <button className="check-completion-button" onClick={handleCheckCompletion} disabled={task.completed}>
-        {task.completed ? 'Задание выполнено' : 'Проверить выполнение'}
+      <button 
+        className="complete-button"
+        onClick={handleCompleteTask} 
+        disabled={!isSubscribed || !ownsToken || task.completed}
+      >
+        {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
       </button>
       {message && <div className="message">{message}</div>}
     </div>
