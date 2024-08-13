@@ -1,29 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import TokenTaskCard from '../card/TokenTaskCard';
 import '../styles/TokenTasks.css';
 import { useActions } from '../hooks/useActions';
 import { useTypeSelector } from '../hooks/useTypeSelector';
+import { completeTask } from '../api/taskApi';
 
 const TokenTasks: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
   const { fetchTask } = useActions();
   const { tasks, loading, error } = useTypeSelector((state) => state.tasks);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        await fetchTask("TOKEN");
-      } catch (err) {
-        console.error("Error fetching tasks:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadTasks();
+    fetchTask("TOKEN");
   }, [fetchTask]);
 
   useEffect(() => {
@@ -38,16 +29,25 @@ const TokenTasks: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  if (isLoading) {
-    return <div>Loading tasks...</div>;
+  const handleTaskAction = async (taskId: number) => {
+    try {
+      await completeTask(taskId);
+      fetchTask("TOKEN"); // Обновляем список задач
+    } catch (error) {
+      console.error('Error completing task:', error);
+    }
+  };
+
+  if (loading) {
+    return <div>Загрузка заданий...</div>;
   }
 
   if (error) {
-    return <div>Error loading tasks: {error}</div>;
+    return <div>Ошибка при загрузке заданий: {error}</div>;
   }
 
   if (tasks.length === 0) {
-    return <div>No tasks available at the moment.</div>;
+    return <div>Нет доступных заданий по токенам</div>;
   }
 
   return (
@@ -63,6 +63,8 @@ const TokenTasks: React.FC = () => {
             name={task.title}
             reward={task.reward}
             link={`/token-task/${task.id}`}
+            completed={task.completed}
+            onAction={handleTaskAction}
           />
         ))}
       </div>
