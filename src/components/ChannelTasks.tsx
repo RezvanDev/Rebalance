@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../redux/store/reducers';
-import { fetchTasksAction, completeTaskAction } from '../redux/store/actions/taskActions';
-import { TaskType } from '../types/task';
+import { RootState } from '../redux/reducers';
+import { fetchTasksAction, completeTaskAction } from '../redux/actions/taskActions';
+import { TaskType, Task } from '../types/task';
 import TaskCard from './TaskCard';
 import LoadingSpinner from './LoadingSpinner';
 import '../styles/ChannelTasks.css';
@@ -13,7 +13,7 @@ const ChannelTasks: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
+  const tasksState = useSelector((state: RootState) => state.tasks);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const ChannelTasks: React.FC = () => {
   }, [tg, navigate]);
 
   const handleTaskClick = async (taskId: number) => {
-    const task = tasks && tasks.find(t => t.id === taskId);
+    const task = tasksState.tasks.find(t => t.id === taskId);
     if (task && !task.completed) {
       try {
         await dispatch(completeTaskAction(taskId));
@@ -49,15 +49,15 @@ const ChannelTasks: React.FC = () => {
     setRefreshing(false);
   };
 
-  if (loading && !refreshing) {
+  if (tasksState.loading && !refreshing) {
     return <LoadingSpinner />;
   }
 
-  if (error) {
-    return <div className="error-message">Ошибка при загрузке заданий: {error}</div>;
+  if (tasksState.error) {
+    return <div className="error-message">Ошибка при загрузке заданий: {tasksState.error}</div>;
   }
 
-  const channelTasks = tasks && tasks.length > 0 ? tasks.filter(task => task.type === TaskType.CHANNEL) : [];
+  const channelTasks = tasksState.tasks.filter((task: Task) => task.type === TaskType.CHANNEL);
 
   if (channelTasks.length === 0) {
     return (
@@ -82,7 +82,7 @@ const ChannelTasks: React.FC = () => {
         </button>
       </div>
       <div className="channel-list">
-        {channelTasks.map((task) => (
+        {channelTasks.map((task: Task) => (
           <TaskCard key={task.id} task={task} onClick={handleTaskClick} />
         ))}
       </div>
