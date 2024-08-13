@@ -1,24 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../redux/reducers';
-import { fetchTasksAction, completeTaskAction } from '../redux/actions/taskActions';
-import { TaskType, Task } from '../types/task';
-import TaskCard from './TaskCard';
-import LoadingSpinner from './LoadingSpinner';
+import axios from 'axios';
+import { BASE_URL } from '../constants/baseUrl';
 import '../styles/ChannelTasks.css';
+
+interface Task {
+  id: number;
+  title: string;
+  reward: string;
+  completed: boolean;
+}
 
 const ChannelTasks: React.FC = () => {
   const { tg } = useTelegram();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const tasksState = useSelector((state: RootState) => state.tasks);
-  const [refreshing, setRefreshing] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    dispatch(fetchTasksAction(TaskType.CHANNEL));
-  }, [dispatch]);
+    fetchTasks();
+  }, []);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -32,58 +35,67 @@ const ChannelTasks: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const handleTaskClick = async (taskId: number) => {
-    const task = tasksState.tasks.find(t => t.id === taskId);
-    if (task && !task.completed) {
-      try {
-        await dispatch(completeTaskAction(taskId));
-      } catch (error) {
-        console.error('Error completing task:', error);
-      }
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BASE_URL}/api/tasks`, { params: { type: 'CHANNEL' } });
+      setTasks(response.data.tasks || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError('Ошибка при загрузке заданий');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await dispatch(fetchTasksAction(TaskType.CHANNEL));
-    setRefreshing(false);
+  const handleTaskClick = async (taskId: number) => {
+    try {
+      await axios.post(`${BASE_URL}/api/tasks/${taskId}/complete`);
+      setTasks(tasks.map(task => 
+        task.id === taskId ? { ...task, completed: true } : task
+      ));
+    } catch (err) {
+      console.error('Error completing task:', err);
+    }
   };
 
-  if (tasksState.loading && !refreshing) {
-    return <LoadingSpinner />;
+  if (loading) {
+    return <div>Загрузка заданий...</div>;
   }
 
-  if (tasksState.error) {
-    return <div className="error-message">Ошибка при загрузке заданий: {tasksState.error}</div>;
+  if (error) {
+    return <div className="error-message">{error}</div>;
   }
 
-  const channelTasks = tasksState.tasks.filter((task: Task) => task.type === TaskType.CHANNEL);
-
-  if (channelTasks.length === 0) {
-    return (
-      <div className="channel-tasks-container">
-        <div className="channel-tasks-header">
-          <h1>Задания по каналам</h1>
-          <button onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? 'Обновление...' : 'Обновить'}
-          </button>
-        </div>
-        <div className="no-tasks-message">Нет доступных заданий по каналам</div>
-      </div>
-    );
+  if (tasks.length === 0) {
+    return <div>Нет доступных заданий по каналам</div>;
   }
 
   return (
     <div className="channel-tasks-container">
       <div className="channel-tasks-header">
         <h1>Задания по каналам</h1>
-        <button onClick={handleRefresh} disabled={refreshing}>
-          {refreshing ? 'Обновление...' : 'Обновить'}
-        </button>
+        <button onClick={fetchTasks}>Обновить</button>
       </div>
       <div className="channel-list">
-        {channelTasks.map((task: Task) => (
-          <TaskCard key={task.id} task={task} onClick={handleTaskClick} />
+        {tasks.map((task) => (
+          <div
+            key={task.id}
+            className={`channel-item ${task.completed ? 'completed' : ''}`}
+            onClick={() => !task.completed && handleTaskClick(task.id)}
+          >
+            <div className="channel-icon">📢</div>
+            <div className="channel-info">
+              <span className="channel-name">{task.title}</span>
+              <span className="channel-reward">{task.reward}</span>
+            </div>
+            {task.completed ? (
+              <span className="completed-icon">✓</span>
+            ) : (
+              <span className="arrow-icon">›</span>
+            )}
+          </div>
         ))}
       </div>
     </div>
