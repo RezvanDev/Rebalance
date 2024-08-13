@@ -4,7 +4,7 @@ import { useTelegram } from "../context/TelegramContext";
 import axios from 'axios';
 import '../styles/TasksPage.css';
 
-const API_URL = 'https://96ef-202-79-184-241.ngrok-free.app/api'; // Замените на URL вашего API
+const API_URL = 'https://f2a6-202-79-184-241.ngrok-free.app/api'; // Замените на URL вашего API
 
 interface Task {
   id: number;
