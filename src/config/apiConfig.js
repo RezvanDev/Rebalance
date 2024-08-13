@@ -1,3 +1,5 @@
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const isTelegramWebApp = window.Telegram && window.Telegram.WebApp;
 
-export { API_URL };
+export const API_URL = isTelegramWebApp
+  ? 'https://chipper-taffy-f2a652.netlify.app'
+  : 'https://chipper-taffy-f2a652.netlify.app/';

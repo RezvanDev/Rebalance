@@ -23,9 +23,6 @@ const TokenTasks: React.FC = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, []);
-
-  useEffect(() => {
     if (tg && tg.BackButton) {
       tg.BackButton.show();
       tg.BackButton.onClick(() => navigate('/tasks'));
@@ -45,6 +42,7 @@ const TokenTasks: React.FC = () => {
           'ngrok-skip-browser-warning': 'true'
         }
       });
+      console.log('API response:', response.data); // Добавьте это для отладки
       if (response.data && Array.isArray(response.data.tasks)) {
         setTasks(response.data.tasks);
         setError(null);
@@ -75,18 +73,22 @@ const TokenTasks: React.FC = () => {
     <div className="token-tasks-container">
       <h1>Задания по токенам</h1>
       <div className="token-list">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className={`token-item ${task.completed ? 'completed' : ''}`}
-            onClick={() => handleTaskClick(task.id)}
-          >
-            <span className="token-name">{task.title}</span>
-            <span className="token-reward">{task.reward}</span>
-            <span className="token-amount">Требуется: {task.tokenAmount} токенов</span>
-            {task.completed && <span className="completed-icon">✓</span>}
-          </div>
-        ))}
+        {tasks.length > 0 ? (
+          tasks.map((task) => (
+            <div
+              key={task.id}
+              className={`token-item ${task.completed ? 'completed' : ''}`}
+              onClick={() => handleTaskClick(task.id)}
+            >
+              <span className="token-name">{task.title}</span>
+              <span className="token-reward">{task.reward}</span>
+              <span className="token-amount">Требуется: {task.tokenAmount} токенов</span>
+              {task.completed && <span className="completed-icon">✓</span>}
+            </div>
+          ))
+        ) : (
+          <div>Нет доступных заданий по токенам</div>
+        )}
       </div>
     </div>
   );
