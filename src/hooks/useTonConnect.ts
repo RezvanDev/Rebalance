@@ -1,16 +1,23 @@
 import { useTonAddress, useTonConnectUI, useTonWallet } from '@tonconnect/ui-react';
-import { useBalance } from '../context/BalanceContext';
+import { useBalanceContext } from '../context/BalanceContext';
 import { useEffect } from 'react';
 
 export function useTonConnect() {
   const [tonConnectUI] = useTonConnectUI();
-  const { balance, updateBalance } = useBalance();
-  const  wallet = useTonWallet()
+  const { balance, updateBalance, fetchBalance } = useBalanceContext();
+  const wallet = useTonWallet();
   const address = useTonAddress();
 
   useEffect(() => {
+    if (tonConnectUI.account?.address) {
+      fetchBalance(); // Получаем баланс с сервера при подключении кошелька
+    }
+  }, [tonConnectUI.account?.address, fetchBalance]);
+
+  useEffect(() => {
     if (tonConnectUI.account?.balance) {
-      updateBalance(tonConnectUI.account.balance);
+      // Обновляем баланс TON в кошельке, если он изменился
+      updateBalance(Number(tonConnectUI.account.balance), 'add');
     }
   }, [tonConnectUI.account?.balance, updateBalance]);
 
@@ -26,6 +33,7 @@ export function useTonConnect() {
       }
       try {
         await tonConnectUI.connectWallet();
+        await fetchBalance(); // Получаем баланс сразу после подключения
       } catch (e) {
         console.error(e);
         throw new Error('Failed to connect wallet');

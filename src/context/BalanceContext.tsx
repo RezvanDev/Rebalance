@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { useBalance } from '../hooks/useBalance';
+import { useBalance as useBalanceHook } from '../hooks/useBalance';
 
 interface BalanceContextType {
   balance: number;
@@ -10,10 +10,10 @@ interface BalanceContextType {
 const BalanceContext = createContext<BalanceContextType | undefined>(undefined);
 
 export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { balance, updateBalance, fetchBalance } = useBalance();
+  const balanceHook = useBalanceHook();
 
   return (
-    <BalanceContext.Provider value={{ balance, updateBalance, fetchBalance }}>
+    <BalanceContext.Provider value={balanceHook}>
       {children}
     </BalanceContext.Provider>
   );
@@ -26,3 +26,6 @@ export const useBalanceContext = () => {
   }
   return context;
 };
+
+// Экспортируем useBalance как алиас для useBalanceContext
+export const useBalance = useBalanceContext;
