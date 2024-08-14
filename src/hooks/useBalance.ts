@@ -29,10 +29,8 @@ export const useBalance = () => {
           params: { amount, operation }
         });
         setBalance(response.data.balance);
-        return response.data.balance;
       } catch (error) {
         console.error('Error updating balance:', error);
-        return null;
       }
     }
   };
