@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import ChannelTaskCard from '../card/ChannelTaskCard';
-import { useBalance } from '../hooks/useBalance';
+import { useBalanceContext } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
-import api from '../utils/api';
+import axios from 'axios';
+import { API_URL } from '../config/apiConfig';
 import "../styles/ChannelTasks.css";
 
 interface Channel {
@@ -19,7 +20,7 @@ interface Channel {
 const ChannelTasks: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const { updateBalance } = useBalance();
+  const { updateBalance } = useBalanceContext();
   const { addTransaction } = useTransactions();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -32,20 +33,12 @@ const ChannelTasks: React.FC = () => {
 
   useEffect(() => {
     if (tg && tg.BackButton) {
-      try {
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => navigate('/tasks'));
-      } catch (error) {
-        console.error('Error setting up BackButton:', error);
-      }
+      tg.BackButton.show();
+      tg.BackButton.onClick(() => navigate('/tasks'));
     }
     return () => {
       if (tg && tg.BackButton) {
-        try {
-          tg.BackButton.offClick();
-        } catch (error) {
-          console.error('Error removing BackButton click handler:', error);
-        }
+        tg.BackButton.offClick();
       }
     };
   }, [tg, navigate]);
@@ -53,7 +46,11 @@ const ChannelTasks: React.FC = () => {
   const fetchChannelTasks = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/tasks?type=CHANNEL');
+      const response = await axios.get(`${API_URL}/tasks?type=CHANNEL`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
       console.log('API response:', response.data);
       if (response.data && Array.isArray(response.data.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user?.id}`) || '[]');
@@ -75,6 +72,10 @@ const ChannelTasks: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching channel tasks:', err);
+      if (axios.isAxiosError(err) && err.response) {
+        console.error('Error response:', err.response.data);
+        console.error('Error status:', err.response.status);
+      }
       setError('Ошибка при загрузке заданий по каналам');
     } finally {
       setLoading(false);
@@ -90,7 +91,9 @@ const ChannelTasks: React.FC = () => {
     const channel = channels.find(c => c.id === id);
     if (channel && user) {
       try {
-        const completeResponse = await api.post(`/tasks/${id}/complete?telegramId=${user.id}`);
+        const completeResponse = await axios.post(`${API_URL}/tasks/${id}/complete`, null, {
+          params: { telegramId: user.id }
+        });
 
         if (completeResponse.data.success) {
           const rewardAmount = parseInt(channel.reward.split(' ')[0]);
@@ -105,6 +108,12 @@ const ChannelTasks: React.FC = () => {
 
             showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
             
+            // Сохраняем ID выполненного задания в localStorage
+            const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
+            completedTasks.push(id);
+            localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
+            
+            // Удаляем выполненное задание из списка
             setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
           } else {
             showMessage('Ошибка при обновлении баланса. Пожалуйста, попробуйте еще раз.');
@@ -114,6 +123,10 @@ const ChannelTasks: React.FC = () => {
         }
       } catch (error) {
         console.error('Error completing channel task:', error);
+        if (axios.isAxiosError(error) && error.response) {
+          console.error('Error response:', error.response.data);
+          console.error('Error status:', error.response.status);
+        }
         showMessage('Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
       }
     }
