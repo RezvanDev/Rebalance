@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '../utils/api';
+import { taskApi } from '../api/taskApi';
 import { useTelegram } from './TelegramContext';
 
 interface BalanceContextType {
@@ -16,12 +16,8 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const fetchBalance = useCallback(async () => {
     if (user?.id) {
       try {
-        const response = await api.get(`/user/${user.id}/balance`);
-        if (response.data && typeof response.data.balance === 'number') {
-          setBalance(response.data.balance);
-        } else {
-          console.error('Invalid balance data:', response.data);
-        }
+        const newBalance = await taskApi.getBalance(String(user.id));
+        setBalance(newBalance);
       } catch (error) {
         console.error('Error fetching balance:', error);
       }
