@@ -33,16 +33,14 @@ const ChannelTasks: React.FC = () => {
       const response = await api.get('/tasks', { params: { type: 'CHANNEL' } });
       if (response.data && Array.isArray(response.data.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
-        const channelTasks = response.data.tasks
-          .filter((task: any) => !completedTasks.includes(task.id))
-          .map((task: any) => ({
-            id: task.id,
-            name: task.title,
-            reward: `${task.reward} LIBRA`,
-            completed: false,
-            link: `/channel/${task.id}`,
-            channelLink: task.channelUsername ? `https://t.me/${task.channelUsername}` : ''
-          }));
+        const channelTasks = response.data.tasks.map((task: any) => ({
+          id: task.id,
+          name: task.title,
+          reward: `${task.reward} LIBRA`,
+          completed: completedTasks.includes(task.id),
+          link: `/channel/${task.id}`,
+          channelLink: task.channelUsername ? `https://t.me/${task.channelUsername}` : ''
+        }));
         setChannels(channelTasks);
         setError(null);
       } else {
@@ -79,14 +77,13 @@ const ChannelTasks: React.FC = () => {
 
   const handleSubscribe = async (id: number) => {
     const channel = channels.find(c => c.id === id);
-    if (channel && user) {
+    if (channel && user && !channel.completed) {
       try {
         const completeResponse = await api.post(`/tasks/${id}/complete`, { telegramId: user.id });
 
         if (completeResponse.data.success) {
           const rewardAmount = parseInt(channel.reward.split(' ')[0]);
           
-          // Обновляем баланс
           await fetchBalance();
           
           addTransaction({
@@ -97,7 +94,11 @@ const ChannelTasks: React.FC = () => {
 
           showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
           
-          setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
+          setChannels(prevChannels => 
+            prevChannels.map(c => 
+              c.id === id ? { ...c, completed: true } : c
+            )
+          );
           
           const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
           completedTasks.push(id);
