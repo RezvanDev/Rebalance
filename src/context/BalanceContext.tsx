@@ -16,11 +16,15 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const fetchBalance = useCallback(async () => {
     if (user?.id) {
       try {
+        console.log('Fetching balance for user:', user.id);
         const newBalance = await taskApi.getBalance(String(user.id));
+        console.log('New balance:', newBalance);
         setBalance(newBalance);
       } catch (error) {
         console.error('Error fetching balance:', error);
       }
+    } else {
+      console.log('No user ID available');
     }
   }, [user]);
 
