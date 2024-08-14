@@ -20,9 +20,13 @@ const ChannelTaskCard: React.FC<ChannelTaskCardProps> = ({
     e.preventDefault();
     if (!completed) {
       window.open(channelLink, '_blank');
+    }
+  };
+
+  const handleSubscribe = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!completed) {
       onSubscribe(id);
-    } else {
-      navigate(link);
     }
   };
 
@@ -39,7 +43,9 @@ const ChannelTaskCard: React.FC<ChannelTaskCardProps> = ({
       {completed ? (
         <span className="completed-icon">✓</span>
       ) : (
-        <span className="arrow-icon">›</span>
+        <button onClick={handleSubscribe} className="subscribe-button">
+          Подтвердить
+        </button>
       )}
     </div>
   );
