@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import { taskApi } from '../api/taskApi';
+import axios from 'axios';
+import { API_URL } from '../config/apiConfig';
 import '../styles/TokenTasks.css';
 
 interface TokenTask {
@@ -20,13 +21,29 @@ const TokenTasks: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTasks = useCallback(async () => {
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  useEffect(() => {
+    if (tg && tg.BackButton) {
+      tg.BackButton.show();
+      tg.BackButton.onClick(() => navigate('/tasks'));
+    }
+    return () => {
+      if (tg && tg.BackButton) {
+        tg.BackButton.offClick();
+      }
+    };
+  }, [tg, navigate]);
+
+  const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await taskApi.getTasks('TOKEN');
-      if (response && Array.isArray(response.tasks)) {
+      const response = await axios.get(`${API_URL}/tasks?type=TOKEN`);
+      if (response.data && Array.isArray(response.data.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user?.id}`) || '[]');
-        const tokenTasks = response.tasks.map((task: TokenTask) => ({
+        const tokenTasks = response.data.tasks.map((task: TokenTask) => ({
           ...task,
           completed: completedTasks.includes(task.id)
         }));
@@ -41,23 +58,7 @@ const TokenTasks: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
-
-  useEffect(() => {
-    if (tg && tg.BackButton) {
-      tg.BackButton.show();
-      tg.BackButton.onClick(() => navigate('/tasks'));
-    }
-    return () => {
-      if (tg && tg.BackButton) {
-        tg.BackButton.offClick();
-      }
-    };
-  }, [tg, navigate]);
+  };
 
   const handleTaskClick = (taskId: number) => {
     navigate(`/token-task/${taskId}`);
