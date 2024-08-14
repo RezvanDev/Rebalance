@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
+import { useBalance } from '../context/BalanceContext';
 import ChannelTaskCard from '../card/ChannelTaskCard';
-import { useBalance } from '../hooks/useBalance';
 import { useTransactions } from '../hooks/useTransactions';
 import api from '../utils/api';
 import "../styles/ChannelTasks.css";
@@ -19,7 +19,7 @@ interface Channel {
 const ChannelTasks: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const { updateBalance, balance } = useBalance();
+  const { balance, updateBalance } = useBalance();
   const { addTransaction } = useTransactions();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -83,7 +83,7 @@ const ChannelTasks: React.FC = () => {
     if (channel && user) {
       try {
         const completeResponse = await api.post(`/tasks/${id}/complete`, { telegramId: user.id });
-  
+
         if (completeResponse.data.success) {
           const rewardAmount = parseInt(channel.reward.split(' ')[0]);
           const newBalance = await updateBalance(rewardAmount, 'add');
@@ -94,7 +94,7 @@ const ChannelTasks: React.FC = () => {
               amount: `${rewardAmount} LIBRA`,
               description: `Подписка на канал ${channel.name}`
             });
-  
+
             showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
             
             setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
@@ -102,9 +102,6 @@ const ChannelTasks: React.FC = () => {
             const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
             completedTasks.push(id);
             localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
-  
-            // Обновляем баланс в интерфейсе
-            updateBalance(newBalance, 'set');
           } else {
             showMessage('Ошибка при обновлении баланса. Пожалуйста, попробуйте еще раз.');
           }
@@ -137,6 +134,7 @@ const ChannelTasks: React.FC = () => {
       <div className="channel-tasks-header">
         <h1>Задания по каналам</h1>
         <p>Подпишитесь на каналы, чтобы получить бонусы</p>
+        <p>Текущий баланс: {balance} LIBRA</p>
         <button className="refresh-button" onClick={handleRefresh}>↻</button>
       </div>
       {channels.length > 0 ? (
