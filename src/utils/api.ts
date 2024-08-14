@@ -1,7 +1,9 @@
+// api.js
 import axios from 'axios';
+import { BASE_URL } from "../constants/baseUrl";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://2b0b-185-213-229-169.ngrok-free.app/api',
+  baseURL: `${BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true'

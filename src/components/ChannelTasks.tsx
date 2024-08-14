@@ -86,26 +86,28 @@ const ChannelTasks: React.FC = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const handleSubscribe = async (id: number) => {
+  const handleSubscribe = async (id) => {
     const channel = channels.find(c => c.id === id);
     if (channel && user) {
       try {
-        await api.post(`/tasks/${id}/complete`, null, {
-          params: { telegramId: user.id }
-        });
-
-        const rewardAmount = parseInt(channel.reward.split(' ')[0]);
-        await updateBalance(rewardAmount, 'add');
-        
-        addTransaction({
-          type: 'Получение',
-          amount: `${rewardAmount} LIBRA`,
-          description: `Подписка на канал ${channel.name}`
-        });
-
-        showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
-        
-        setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
+        const response = await api.post(`/tasks/${id}/complete?telegramId=${user.id}`, {});
+  
+        if (response.data.success) {
+          const rewardAmount = parseInt(channel.reward.split(' ')[0]);
+          await updateBalance(rewardAmount, 'add');
+          
+          addTransaction({
+            type: 'Получение',
+            amount: `${rewardAmount} LIBRA`,
+            description: `Подписка на канал ${channel.name}`
+          });
+  
+          showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
+          
+          setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
+        } else {
+          showMessage(response.data.error || 'Произошла ошибка при выполнении задания.');
+        }
       } catch (error) {
         console.error('Error completing channel task:', error);
         showMessage('Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
