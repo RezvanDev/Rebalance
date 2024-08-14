@@ -50,3 +50,39 @@
   .arrow-icon {
     color: #2196F3;
   }
+
+  .channel-item {
+    /* существующие стили */
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+  }
+  
+  .channel-item.completed {
+    opacity: 0.7;
+  }
+  
+  
+  .completed-icon {
+    color: green;
+    font-weight: bold;
+  }
+  
+  .subscribe-button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .subscribe-button:hover {
+    background-color: #45a049;
+  }
