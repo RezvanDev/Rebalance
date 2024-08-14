@@ -22,6 +22,8 @@ const MainMenu: React.FC = () => {
   const { balance, fetchBalance } = useBalance();
   const [showNotification, setShowNotification] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     if (tg) {
@@ -33,16 +35,26 @@ const MainMenu: React.FC = () => {
   const fetchUser = useCallback(async () => {
     if (user?.id) {
       try {
+        setLoading(true);
+        setError(null);
         console.log("Fetching referrals for user ID:", user.id);
-        const userData = await taskApi.getReferrals(String(user.id));
-        console.log("Received user data:", userData);
-        if (userData.success) {
-          setUserData(userData);
+        const response = await taskApi.getReferrals(String(user.id));
+        console.log("Received user data:", response);
+        if (response.success) {
+          setUserData({
+            referralsCount: response.referralsCount,
+            referralsByLevel: response.referralsByLevel,
+            rewardsByLevel: response.rewardsByLevel
+          });
         } else {
-          console.error("Error fetching referrals:", userData.error);
+          setError("Ошибка при загрузке данных о рефералах");
+          console.error("Error fetching referrals:", response.error);
         }
       } catch (error) {
+        setError("Произошла ошибка при загрузке данных");
         console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
       }
     }
   }, [user]);
@@ -57,6 +69,10 @@ const MainMenu: React.FC = () => {
     const intervalId = setInterval(fetchBalance, 10000);
     return () => clearInterval(intervalId);
   }, [fetchBalance]);
+
+  useEffect(() => {
+    console.log("userData updated:", userData);
+  }, [userData]);
 
   const handleInvite = () => {
     const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
@@ -150,26 +166,32 @@ const MainMenu: React.FC = () => {
             </button>
           </div>
         </div>
-        <table className="table">
-          <thead>
-            <tr className="table-header">
-              <th className="table-cell">Уровень</th>
-              <th className="table-cell">Процент</th>
-              <th className="table-cell">Кол-во</th>
-              <th className="table-cell">Награда</th>
-            </tr>
-          </thead>
-          <tbody>
-            {referralLevels.map((level) => (
-              <tr key={level.level} className="table-row">
-                <td className="table-cell">{level.level}</td>
-                <td className="table-cell">{level.percentage}%</td>
-                <td className="table-cell">{userData?.referralsByLevel[level.level] || 0}</td>
-                <td className="table-cell">{userData?.rewardsByLevel[level.level] || 0} REBA</td>
+        {loading ? (
+          <p>Загрузка данных о рефералах...</p>
+        ) : error ? (
+          <p className="error-message">{error}</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr className="table-header">
+                <th className="table-cell">Уровень</th>
+                <th className="table-cell">Процент</th>
+                <th className="table-cell">Кол-во</th>
+                <th className="table-cell">Награда</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {referralLevels.map((level) => (
+                <tr key={level.level} className="table-row">
+                  <td className="table-cell">{level.level}</td>
+                  <td className="table-cell">{level.percentage}%</td>
+                  <td className="table-cell">{userData?.referralsByLevel[level.level] || 0}</td>
+                  <td className="table-cell">{userData?.rewardsByLevel[level.level] || 0} REBA</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="card">
