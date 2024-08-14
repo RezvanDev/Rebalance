@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import ChannelTaskCard from '../card/ChannelTaskCard';
@@ -26,23 +26,7 @@ const ChannelTasks: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchChannelTasks();
-  }, []);
-
-  useEffect(() => {
-    if (tg && tg.BackButton) {
-      tg.BackButton.show();
-      tg.BackButton.onClick(() => navigate('/tasks'));
-    }
-    return () => {
-      if (tg && tg.BackButton) {
-        tg.BackButton.offClick();
-      }
-    };
-  }, [tg, navigate]);
-
-  const fetchChannelTasks = async () => {
+  const fetchChannelTasks = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/tasks', { params: { type: 'CHANNEL' } });
@@ -70,7 +54,23 @@ const ChannelTasks: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchChannelTasks();
+  }, [fetchChannelTasks]);
+
+  useEffect(() => {
+    if (tg && tg.BackButton) {
+      tg.BackButton.show();
+      tg.BackButton.onClick(() => navigate('/tasks'));
+    }
+    return () => {
+      if (tg && tg.BackButton) {
+        tg.BackButton.offClick();
+      }
+    };
+  }, [tg, navigate]);
 
   const showMessage = (msg: string) => {
     setMessage(msg);
@@ -120,11 +120,11 @@ const ChannelTasks: React.FC = () => {
   };
 
   if (loading) {
-    return <div>Загрузка заданий по каналам...</div>;
+    return <div className="loading">Загрузка заданий по каналам...</div>;
   }
 
   if (error) {
-    return <div>{error}</div>;
+    return <div className="error">{error}</div>;
   }
 
   return (
@@ -146,7 +146,7 @@ const ChannelTasks: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div>Нет доступных заданий по каналам</div>
+        <div className="no-tasks">Нет доступных заданий по каналам</div>
       )}
     </div>
   );
