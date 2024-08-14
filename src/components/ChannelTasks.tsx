@@ -19,7 +19,7 @@ interface Channel {
 const ChannelTasks: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const { updateBalance } = useBalance();
+  const { updateBalance, balance } = useBalance();
   const { addTransaction } = useTransactions();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -27,12 +27,13 @@ const ChannelTasks: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchChannelTasks = useCallback(async () => {
+    if (!user) return;
     try {
       setLoading(true);
       const response = await api.get('/tasks', { params: { type: 'CHANNEL' } });
       console.log('API response:', response.data);
       if (response.data && Array.isArray(response.data.tasks)) {
-        const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user?.id}`) || '[]');
+        const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
         const channelTasks = response.data.tasks
           .filter((task: any) => !completedTasks.includes(task.id))
           .map((task: any) => ({
@@ -96,11 +97,16 @@ const ChannelTasks: React.FC = () => {
 
             showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
             
+            // Обновляем список каналов, удаляя выполненное задание
             setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
             
+            // Сохраняем выполненное задание в localStorage
             const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
             completedTasks.push(id);
             localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
+
+            // Обновляем баланс в интерфейсе
+            updateBalance(newBalance, 'set');
           } else {
             showMessage('Ошибка при обновлении баланса. Пожалуйста, попробуйте еще раз.');
           }
