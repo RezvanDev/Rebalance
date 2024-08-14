@@ -20,11 +20,12 @@ const MainMenu: React.FC = () => {
   const { tg, user } = useTelegram();
   const { transactions } = useTransactions();
   const { balance, fetchBalance } = useBalance();
-  const [showNotification, setShowNotification] = useState(false);
   const [referralData, setReferralData] = useState<ReferralData[]>([]);
   const [totalReferrals, setTotalReferrals] = useState(0);
+  const [totalReferralEarnings, setTotalReferralEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
   
   useEffect(() => {
     if (tg) {
@@ -35,7 +36,6 @@ const MainMenu: React.FC = () => {
   
   const fetchReferralData = useCallback(async () => {
     if (!user?.id) {
-      console.log("User ID is not available");
       setError("User information is not available");
       setLoading(false);
       return;
@@ -44,21 +44,25 @@ const MainMenu: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log("Fetching referrals for user ID:", user.id);
-      const response = await taskApi.getReferrals(String(user.id));
-      console.log("Received referral data:", response);
+      const [referralsResponse, earningsResponse] = await Promise.all([
+        taskApi.getReferrals(String(user.id)),
+        taskApi.getTotalReferralEarnings(String(user.id))
+      ]);
+      console.log("Received referral data:", referralsResponse);
+      console.log("Received total referral earnings:", earningsResponse);
 
-      if (response.success) {
-        const formattedData = Object.entries(response.referralsByLevel).map(([level, count]) => ({
+      if (referralsResponse.success) {
+        const formattedData = Object.entries(referralsResponse.referralsByLevel).map(([level, count]) => ({
           level: Number(level),
-          percentage: response.percentages[level] || 0,
+          percentage: referralsResponse.percentages[level],
           count: count as number,
-          reward: response.rewardsByLevel[level] || 0
+          reward: referralsResponse.rewardsByLevel[level] || 0
         }));
         setReferralData(formattedData);
-        setTotalReferrals(response.referralsCount);
+        setTotalReferrals(referralsResponse.referralsCount);
+        setTotalReferralEarnings(earningsResponse);
       } else {
-        setError(response.error || "Ошибка при загрузке данных о рефералах");
+        setError(referralsResponse.error || "Ошибка при загрузке данных о рефералах");
       }
     } catch (error) {
       setError(`Произошла ошибка при загрузке данных: ${error.message}`);
@@ -160,7 +164,8 @@ const MainMenu: React.FC = () => {
         <div className="referrals-header">
           <div>
             <h3 className="referrals-title">Рефералы</h3>
-            <p className="referrals-count">{totalReferrals}</p>
+            <p className="referrals-count">Всего: {totalReferrals}</p>
+            <p className="referrals-earnings">Заработано: {totalReferralEarnings} REBA</p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <button className="invite-button" onClick={handleInvite}>

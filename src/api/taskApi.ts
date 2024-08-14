@@ -72,4 +72,17 @@ export const taskApi = {
       throw error;
     }
   },
+
+  // Добавим новый метод для получения общего заработка от рефералов
+  getTotalReferralEarnings: async (telegramId: string) => {
+    try {
+      console.log(`Fetching total referral earnings for user ${telegramId}`);
+      const response = await api.get(`/user/${telegramId}/total-referral-earnings`);
+      console.log('Total referral earnings response:', response.data);
+      return response.data.totalReferralEarnings;
+    } catch (error) {
+      console.error('Error fetching total referral earnings:', error);
+      throw error;
+    }
+  },
 };
