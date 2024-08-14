@@ -83,7 +83,7 @@ const ChannelTasks: React.FC = () => {
     if (channel && user) {
       try {
         const completeResponse = await api.post(`/tasks/${id}/complete`, { telegramId: user.id });
-
+  
         if (completeResponse.data.success) {
           const rewardAmount = parseInt(channel.reward.split(' ')[0]);
           const newBalance = await updateBalance(rewardAmount, 'add');
@@ -94,17 +94,15 @@ const ChannelTasks: React.FC = () => {
               amount: `${rewardAmount} LIBRA`,
               description: `Подписка на канал ${channel.name}`
             });
-
+  
             showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
             
-            // Обновляем список каналов, удаляя выполненное задание
             setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
             
-            // Сохраняем выполненное задание в localStorage
             const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
             completedTasks.push(id);
             localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
-
+  
             // Обновляем баланс в интерфейсе
             updateBalance(newBalance, 'set');
           } else {
