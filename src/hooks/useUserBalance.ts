@@ -7,7 +7,6 @@ export const useUserBalance = () => {
 
   useEffect(() => {
     if (connected && wallet) {
-      // Загружаем баланс из localStorage при подключении кошелька
       const savedBalance = localStorage.getItem('userBalance');
       if (savedBalance) {
         setBalance(Number(savedBalance));
@@ -16,25 +15,26 @@ export const useUserBalance = () => {
   }, [connected, wallet]);
 
   const addToBalance = (amount: number) => {
-    const newBalance = balance + amount;
-    setBalance(newBalance);
-    // Сохраняем обновленный баланс в localStorage
-    localStorage.setItem('userBalance', newBalance.toString());
-    console.log(`Баланс увеличен на ${amount} REBA`);
+    setBalance(prevBalance => {
+      const newBalance = prevBalance + amount;
+      localStorage.setItem('userBalance', newBalance.toString());
+      console.log(`Баланс увеличен на ${amount} REBA`);
+      return newBalance;
+    });
   };
 
   const subtractFromBalance = (amount: number) => {
-    if (balance >= amount) {
-      const newBalance = balance - amount;
-      setBalance(newBalance);
-      // Сохраняем обновленный баланс в localStorage
-      localStorage.setItem('userBalance', newBalance.toString());
-      console.log(`Баланс уменьшен на ${amount} REBA`);
-      return true;
-    } else {
-      console.log('Недостаточно средств');
-      return false;
-    }
+    return setBalance(prevBalance => {
+      if (prevBalance >= amount) {
+        const newBalance = prevBalance - amount;
+        localStorage.setItem('userBalance', newBalance.toString());
+        console.log(`Баланс уменьшен на ${amount} REBA`);
+        return newBalance;
+      } else {
+        console.log('Недостаточно средств');
+        return prevBalance;
+      }
+    });
   };
 
   return {
