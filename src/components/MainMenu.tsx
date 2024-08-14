@@ -40,7 +40,7 @@ const MainMenu: React.FC = () => {
       setLoading(false);
       return;
     }
-
+  
     try {
       setLoading(true);
       setError(null);
@@ -50,7 +50,7 @@ const MainMenu: React.FC = () => {
       ]);
       console.log("Received referral data:", referralsResponse);
       console.log("Received total referral earnings:", earningsResponse);
-
+  
       if (referralsResponse.success) {
         const formattedData = Object.entries(referralsResponse.referralsByLevel).map(([level, count]) => ({
           level: Number(level),
@@ -60,13 +60,12 @@ const MainMenu: React.FC = () => {
         }));
         setReferralData(formattedData);
         setTotalReferrals(referralsResponse.referralsCount);
-        setTotalReferralEarnings(earningsResponse);
+        setTotalReferralEarnings(earningsResponse.totalReferralEarnings);
       } else {
         setError(referralsResponse.error || "Ошибка при загрузке данных о рефералах");
       }
     } catch (error) {
-      const errorMessage = error.response ? `${error.response.status} ${error.response.statusText}` : error.message;
-      setError(`Произошла ошибка при загрузке данных: ${errorMessage}`);
+      setError(`Произошла ошибка при загрузке данных: ${error.message}`);
       console.error("Error fetching referral data:", error);
     } finally {
       setLoading(false);
