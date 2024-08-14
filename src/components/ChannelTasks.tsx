@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import ChannelTaskCard from '../card/ChannelTaskCard';
-import { useBalance } from '../context/BalanceContext';
+import { useBalance } from '../hooks/useBalance';
 import { useTransactions } from '../hooks/useTransactions';
 import api from '../utils/api';
 import "../styles/ChannelTasks.css";
@@ -86,27 +86,31 @@ const ChannelTasks: React.FC = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const handleSubscribe = async (id) => {
+  const handleSubscribe = async (id: number) => {
     const channel = channels.find(c => c.id === id);
     if (channel && user) {
       try {
-        const response = await api.post(`/tasks/${id}/complete?telegramId=${user.id}`, {});
-  
-        if (response.data.success) {
+        const completeResponse = await api.post(`/tasks/${id}/complete?telegramId=${user.id}`);
+
+        if (completeResponse.data.success) {
           const rewardAmount = parseInt(channel.reward.split(' ')[0]);
-          await updateBalance(rewardAmount, 'add');
+          const newBalance = await updateBalance(rewardAmount, 'add');
           
-          addTransaction({
-            type: 'Получение',
-            amount: `${rewardAmount} LIBRA`,
-            description: `Подписка на канал ${channel.name}`
-          });
-  
-          showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
-          
-          setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
+          if (newBalance !== null) {
+            addTransaction({
+              type: 'Получение',
+              amount: `${rewardAmount} LIBRA`,
+              description: `Подписка на канал ${channel.name}`
+            });
+
+            showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
+            
+            setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
+          } else {
+            showMessage('Ошибка при обновлении баланса. Пожалуйста, попробуйте еще раз.');
+          }
         } else {
-          showMessage(response.data.error || 'Произошла ошибка при выполнении задания.');
+          showMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания.');
         }
       } catch (error) {
         console.error('Error completing channel task:', error);
