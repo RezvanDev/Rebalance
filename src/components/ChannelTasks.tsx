@@ -32,12 +32,20 @@ const ChannelTasks: React.FC = () => {
 
   useEffect(() => {
     if (tg && tg.BackButton) {
-      tg.BackButton.show();
-      tg.BackButton.onClick(() => navigate('/tasks'));
+      try {
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => navigate('/tasks'));
+      } catch (error) {
+        console.error('Error setting up BackButton:', error);
+      }
     }
     return () => {
       if (tg && tg.BackButton) {
-        tg.BackButton.offClick();
+        try {
+          tg.BackButton.offClick();
+        } catch (error) {
+          console.error('Error removing BackButton click handler:', error);
+        }
       }
     };
   }, [tg, navigate]);
@@ -45,11 +53,7 @@ const ChannelTasks: React.FC = () => {
   const fetchChannelTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/tasks?type=CHANNEL`, {
-        headers: {
-          'ngrok-skip-browser-warning': 'true'
-        }
-      });
+      const response = await api.get('/tasks?type=CHANNEL');
       console.log('API response:', response.data);
       if (response.data && Array.isArray(response.data.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user?.id}`) || '[]');
@@ -71,10 +75,6 @@ const ChannelTasks: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching channel tasks:', err);
-      if (axios.isAxiosError(err) && err.response) {
-        console.error('Error response:', err.response.data);
-        console.error('Error status:', err.response.status);
-      }
       setError('Ошибка при загрузке заданий по каналам');
     } finally {
       setLoading(false);
@@ -105,7 +105,6 @@ const ChannelTasks: React.FC = () => {
 
         showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
         
-        // Обновляем список каналов
         setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
       } catch (error) {
         console.error('Error completing channel task:', error);
