@@ -9,25 +9,33 @@ import backgroundVideo from "../assets/video.mp4";
 import tonIcon from "../assets/ton.svg";
 import { taskApi } from "../api/taskApi";
 
+interface UserData {
+  referralsCount: number;
+  referralsByLevel: { [key: number]: number };
+  rewardsByLevel: { [key: number]: number };
+}
+
 const MainMenu: React.FC = () => {
-  const { connected, connectWallet, walletAddress, wallet } = useTonConnect();
+  const { connected, connectWallet, walletAddress } = useTonConnect();
   const { tg, user } = useTelegram();
   const { transactions } = useTransactions();
   const { balance, fetchBalance } = useBalance();
   const [showNotification, setShowNotification] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   
   useEffect(() => {
     if (tg) {
       tg.BackButton.hide();
     }
-    fetchBalance(); // Fetch balance when component mounts
+    fetchBalance();
   }, [tg, fetchBalance]);
   
   const fetchUser = useCallback(async () => {
     if (user?.id) {
       try {
+        console.log("Fetching user data for ID:", user.id);
         const userData = await taskApi.getReferrals(String(user.id));
+        console.log("Received user data:", userData);
         setUserData(userData);
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -41,37 +49,24 @@ const MainMenu: React.FC = () => {
     }
   }, [connected, user, fetchUser]);
 
-  // Fetch balance periodically
   useEffect(() => {
-    const intervalId = setInterval(fetchBalance, 10000); // Fetch every 10 seconds
+    const intervalId = setInterval(fetchBalance, 10000);
     return () => clearInterval(intervalId);
   }, [fetchBalance]);
-
-  const handleConnectWallet = async () => {
-    try {
-      await connectWallet();
-    } catch (error) {
-      console.error("Failed to connect wallet:", error);
-    }
-  };
 
   const handleInvite = () => {
     const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
     console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
 
     if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-      console.log("Используем openTelegramLink");
       window.Telegram.WebApp.openTelegramLink(
         `https://t.me/share/url?url=${encodeURIComponent(referralLink)}`
       );
     } else if (window.Telegram.WebApp && window.Telegram.WebApp.shareUrl) {
-      console.log("Используем WebApp.shareUrl");
       window.Telegram.WebApp.shareUrl(referralLink);
     } else if (tg && tg.shareUrl) {
-      console.log("Используем tg.shareUrl");
       tg.shareUrl(referralLink);
     } else if (navigator.share) {
-      console.log("Используем navigator.share");
       navigator
         .share({
           title: "Приглашение",
@@ -86,18 +81,15 @@ const MainMenu: React.FC = () => {
           handleCopyReferralLink();
         });
     } else {
-      console.log("Методы шаринга недоступны, копируем ссылку");
       handleCopyReferralLink();
     }
   };
 
   const handleCopyReferralLink = () => {
     const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
-    console.log("Копирование ссылки:", referralLink);
     navigator.clipboard
       .writeText(referralLink)
       .then(() => {
-        console.log("Ссылка успешно скопирована");
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 3000);
       })
@@ -116,7 +108,7 @@ const MainMenu: React.FC = () => {
           Пригласительная ссылка скопирована в буфер обмена
         </div>
       )}
-       <div className="balance-card">
+      <div className="balance-card">
         <video autoPlay loop muted playsInline>
           <source src={backgroundVideo} type="video/mp4" />
         </video>
@@ -168,8 +160,8 @@ const MainMenu: React.FC = () => {
               <tr key={level.level} className="table-row">
                 <td className="table-cell">{level.level}</td>
                 <td className="table-cell">{level.percentage}%</td>
-                <td className="table-cell">{userData?.referralsByLevel?.[level.level] || 0}</td>
-                <td className="table-cell">{userData?.rewardsByLevel?.[level.level] || 0} REBA</td>
+                <td className="table-cell">{userData?.referralsByLevel[level.level] || 0}</td>
+                <td className="table-cell">{userData?.rewardsByLevel[level.level] || 0} REBA</td>
               </tr>
             ))}
           </tbody>
