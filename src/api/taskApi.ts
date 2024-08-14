@@ -10,8 +10,14 @@ export const taskApi = {
     return response.data;
   },
   getBalance: async (telegramId: string) => {
-    const response = await api.get(`/user/${telegramId}/balance`);
-    return response.data.balance; // Предполагаем, что сервер возвращает { balance: number }
+    try {
+      const response = await api.get(`/user/${telegramId}/balance`);
+      console.log('Balance response:', response.data);
+      return response.data.balance;
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+      throw error;
+    }
   },
   updateBalance: async (userId: string, amount: number, operation: 'add' | 'subtract') => {
     const response = await api.post(`/user/${userId}/balance`, { amount, operation });
