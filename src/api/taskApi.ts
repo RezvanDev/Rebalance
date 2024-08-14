@@ -2,14 +2,8 @@ import api from '../utils/api';
 
 export const taskApi = {
   getTasks: async (type: string) => {
-    try {
-      const response = await api.get('/tasks', { params: { type } });
-      console.log('Tasks response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      throw error;
-    }
+    const response = await api.get('/tasks', { params: { type } });
+    return response.data;
   },
   completeTask: async (taskId: number, telegramId: string) => {
     const response = await api.post(`/tasks/${taskId}/complete`, { telegramId });
