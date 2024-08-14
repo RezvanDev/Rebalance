@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useTelegram } from '../context/TelegramContext';
+import { useTelegram } from './TelegramContext';
 import { BASE_URL } from '../constants/baseUrl';
 
 interface BalanceContextType {
@@ -50,10 +50,13 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
-export const useBalance = () => {
+export const useBalanceContext = () => {
   const context = useContext(BalanceContext);
   if (context === undefined) {
-    throw new Error('useBalance must be used within a BalanceProvider');
+    throw new Error('useBalanceContext must be used within a BalanceProvider');
   }
   return context;
 };
+
+// Экспортируем useBalance как алиас для useBalanceContext для обратной совместимости
+export const useBalance = useBalanceContext;

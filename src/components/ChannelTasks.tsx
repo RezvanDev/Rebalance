@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import ChannelTaskCard from '../card/ChannelTaskCard';
-import { useBalanceContext } from '../context/BalanceContext';
+import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
 import axios from 'axios';
 import { API_URL } from '../config/apiConfig';
@@ -20,7 +20,7 @@ interface Channel {
 const ChannelTasks: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const { updateBalance } = useBalanceContext();
+  const { updateBalance } = useBalance();
   const { addTransaction } = useTransactions();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [message, setMessage] = useState<string | null>(null);
