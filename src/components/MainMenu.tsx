@@ -65,7 +65,8 @@ const MainMenu: React.FC = () => {
         setError(referralsResponse.error || "Ошибка при загрузке данных о рефералах");
       }
     } catch (error) {
-      setError(`Произошла ошибка при загрузке данных: ${error.message}`);
+      const errorMessage = error.response ? `${error.response.status} ${error.response.statusText}` : error.message;
+      setError(`Произошла ошибка при загрузке данных: ${errorMessage}`);
       console.error("Error fetching referral data:", error);
     } finally {
       setLoading(false);
@@ -74,7 +75,10 @@ const MainMenu: React.FC = () => {
 
   useEffect(() => {
     if (connected && user?.id) {
+      console.log("Fetching referral data for user:", user.id);
       fetchReferralData();
+    } else {
+      console.log("Not fetching referral data. Connected:", connected, "User ID:", user?.id);
     }
   }, [connected, user, fetchReferralData]);
 

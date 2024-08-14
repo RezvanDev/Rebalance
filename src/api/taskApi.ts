@@ -63,7 +63,7 @@ export const taskApi = {
 
   getReferrals: async (telegramId: string) => {
     try {
-      console.log("Making API call to get referrals for user ID:", telegramId);
+      console.log("Sending request for referrals. TelegramId:", telegramId);
       const response = await api.get(`/user/${telegramId}/referrals`);
       console.log("API response for referrals:", response.data);
       return response.data;
