@@ -33,10 +33,14 @@ const MainMenu: React.FC = () => {
   const fetchUser = useCallback(async () => {
     if (user?.id) {
       try {
-        console.log("Fetching user data for ID:", user.id);
+        console.log("Fetching referrals for user ID:", user.id);
         const userData = await taskApi.getReferrals(String(user.id));
         console.log("Received user data:", userData);
-        setUserData(userData);
+        if (userData.success) {
+          setUserData(userData);
+        } else {
+          console.error("Error fetching referrals:", userData.error);
+        }
       } catch (error) {
         console.error("Error fetching user data:", error);
       }
