@@ -90,7 +90,9 @@ const ChannelTasks: React.FC = () => {
     const channel = channels.find(c => c.id === id);
     if (channel && user) {
       try {
-        const completeResponse = await api.post(`/tasks/${id}/complete?telegramId=${user.id}`);
+        const completeResponse = await api.post(`/tasks/${id}/complete`, null, {
+          params: { telegramId: user.id }
+        });
 
         if (completeResponse.data.success) {
           const rewardAmount = parseInt(channel.reward.split(' ')[0]);
@@ -106,15 +108,20 @@ const ChannelTasks: React.FC = () => {
             showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
             
             setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
+            
+            // Добавляем задание в список выполненных
+            const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
+            completedTasks.push(id);
+            localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
           } else {
             showMessage('Ошибка при обновлении баланса. Пожалуйста, попробуйте еще раз.');
           }
         } else {
           showMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания.');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error completing channel task:', error);
-        showMessage('Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
+        showMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
       }
     }
   };
