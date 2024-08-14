@@ -4,10 +4,8 @@ import { useTelegram } from '../context/TelegramContext';
 import ChannelTaskCard from '../card/ChannelTaskCard';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
-import axios from 'axios';
-import { API_URL } from '../config/apiConfig';
+import api from '../utils/api';
 import "../styles/ChannelTasks.css";
-
 
 interface Channel {
   id: number;
@@ -92,13 +90,12 @@ const ChannelTasks: React.FC = () => {
     const channel = channels.find(c => c.id === id);
     if (channel && user) {
       try {
-        await axios.post(`${API_URL}/tasks/${id}/complete`, null, {
+        await api.post(`/tasks/${id}/complete`, null, {
           params: { telegramId: user.id }
         });
 
         const rewardAmount = parseInt(channel.reward.split(' ')[0]);
         await updateBalance(rewardAmount, 'add');
-        console.log('Balance updated, new balance:', balance);
         
         addTransaction({
           type: 'Получение',
@@ -112,7 +109,7 @@ const ChannelTasks: React.FC = () => {
         setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
       } catch (error) {
         console.error('Error completing channel task:', error);
-        showMessage('Произошла ошибка при выполнении задания');
+        showMessage('Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
       }
     }
   };

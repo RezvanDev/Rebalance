@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { useTelegram } from './TelegramContext';
-import { BASE_URL } from '../constants/baseUrl';
 
 interface BalanceContextType {
   balance: number;
@@ -18,7 +17,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const fetchBalance = useCallback(async () => {
     if (user?.id) {
       try {
-        const response = await axios.get(`${BASE_URL}/api/user/${user.id}/balance`);
+        const response = await api.get(`/user/${user.id}/balance`);
         console.log('Fetched balance:', response.data);
         setBalance(response.data.balance);
       } catch (error) {
@@ -34,14 +33,14 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateBalance = async (amount: number, operation: 'add' | 'subtract') => {
     if (user?.id) {
       try {
-        const response = await axios.post(`${BASE_URL}/api/user/${user.id}/balance`, null, {
+        const response = await api.post(`/user/${user.id}/balance`, null, {
           params: { amount, operation }
         });
         console.log('Updated balance:', response.data);
         setBalance(response.data.balance);
-        await fetchBalance(); // Повторно получаем баланс после обновления
       } catch (error) {
         console.error('Error updating balance:', error);
+        throw error; // Пробрасываем ошибку дальше
       }
     }
   };
