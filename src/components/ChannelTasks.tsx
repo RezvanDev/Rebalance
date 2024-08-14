@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import ChannelTaskCard from '../card/ChannelTaskCard';
-import { useUserBalance } from '../hooks/useUserBalance';
-import { useBalance } from '../context/BalanceContext';
+import { useBalanceContext } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
 import axios from 'axios';
 import { API_URL } from '../config/apiConfig';
@@ -21,8 +20,7 @@ interface Channel {
 const ChannelTasks: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const { addToBalance } = useUserBalance();
-  const { updateChannelRewards } = useBalance();
+  const { updateBalance } = useBalanceContext();
   const { addTransaction } = useTransactions();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -98,8 +96,7 @@ const ChannelTasks: React.FC = () => {
         });
 
         const rewardAmount = parseInt(channel.reward.split(' ')[0]);
-        addToBalance(rewardAmount);
-        updateChannelRewards(rewardAmount);
+        await updateBalance(rewardAmount, 'add');
         
         addTransaction({
           type: 'Получение',

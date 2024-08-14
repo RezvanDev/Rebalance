@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useTelegram } from "../context/TelegramContext";
 import { useTransactions } from "../hooks/useTransactions";
@@ -9,12 +9,14 @@ import tonIcon from "../assets/ton.svg";
 import axios from "axios";
 import { BASE_URL } from "../constants/baseUrl";
 import { useTonConnectUI } from "@tonconnect/ui-react";
+import { useBalance } from "../hooks/useBalance";
 
 const MainMenu: React.FC = () => {
   const [tonConnectUI] = useTonConnectUI();
   const { connected, connectWallet, walletAddress, wallet } = useTonConnect();
   const { tg, user } = useTelegram();
   const { transactions } = useTransactions();
+  const { balance, fetchBalance } = useBalance();
   const [showNotification, setShowNotification] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   
@@ -29,6 +31,10 @@ const MainMenu: React.FC = () => {
       fetchUser(wallet.address);
     }
   }, [connected, wallet?.address]);
+
+  useEffect(() => {
+    fetchBalance();
+  }, [fetchBalance]);
 
   const fetchUser = async (address: string) => {
     try {
@@ -108,12 +114,12 @@ const MainMenu: React.FC = () => {
           Пригласительная ссылка скопирована в буфер обмена
         </div>
       )}
-      <div className="balance-card">
+       <div className="balance-card">
         <video autoPlay loop muted playsInline>
           <source src={backgroundVideo} type="video/mp4" />
         </video>
         <h2 className="balance-title">Баланс</h2>
-        <p className="balance-amount">{userData?.balance || 0} REBA</p>
+        <p className="balance-amount">{balance} REBA</p>
         <p className="wallet-label">Кошелек</p>
         <p className="wallet-address">{walletAddress || ""}</p>
         {connected ? (
