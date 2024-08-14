@@ -19,6 +19,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (user?.id) {
       try {
         const response = await axios.get(`${BASE_URL}/api/user/${user.id}/balance`);
+        console.log('Fetched balance:', response.data);
         setBalance(response.data.balance);
       } catch (error) {
         console.error('Error fetching balance:', error);
@@ -36,7 +37,9 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const response = await axios.post(`${BASE_URL}/api/user/${user.id}/balance`, null, {
           params: { amount, operation }
         });
+        console.log('Updated balance:', response.data);
         setBalance(response.data.balance);
+        await fetchBalance(); // Повторно получаем баланс после обновления
       } catch (error) {
         console.error('Error updating balance:', error);
       }
@@ -50,13 +53,10 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
-export const useBalanceContext = () => {
+export const useBalance = () => {
   const context = useContext(BalanceContext);
   if (context === undefined) {
-    throw new Error('useBalanceContext must be used within a BalanceProvider');
+    throw new Error('useBalance must be used within a BalanceProvider');
   }
   return context;
 };
-
-// Экспортируем useBalance как алиас для useBalanceContext для обратной совместимости
-export const useBalance = useBalanceContext;

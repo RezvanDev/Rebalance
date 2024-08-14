@@ -8,6 +8,7 @@ import axios from 'axios';
 import { API_URL } from '../config/apiConfig';
 import "../styles/ChannelTasks.css";
 
+
 interface Channel {
   id: number;
   name: string;
@@ -97,6 +98,7 @@ const ChannelTasks: React.FC = () => {
 
         const rewardAmount = parseInt(channel.reward.split(' ')[0]);
         await updateBalance(rewardAmount, 'add');
+        console.log('Balance updated, new balance:', balance);
         
         addTransaction({
           type: 'Получение',
@@ -106,12 +108,7 @@ const ChannelTasks: React.FC = () => {
 
         showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
         
-        // Сохраняем ID выполненного задания в localStorage
-        const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
-        completedTasks.push(id);
-        localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
-        
-        // Удаляем выполненное задание из списка
+        // Обновляем список каналов
         setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
       } catch (error) {
         console.error('Error completing channel task:', error);

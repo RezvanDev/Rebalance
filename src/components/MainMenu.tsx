@@ -11,6 +11,7 @@ import { BASE_URL } from "../constants/baseUrl";
 import { useTonConnectUI } from "@tonconnect/ui-react";
 import { useBalance } from "../context/BalanceContext";
 
+
 const MainMenu: React.FC = () => {
   const [tonConnectUI] = useTonConnectUI();
   const { connected, connectWallet, walletAddress, wallet } = useTonConnect();
