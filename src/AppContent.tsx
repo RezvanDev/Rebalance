@@ -9,7 +9,7 @@ import ChannelTasks from './components/ChannelTasks';
 import TokenTasks from './components/TokenTasks'; 
 import NavigationBar from './components/NavigationBar';
 import TokenTaskDetail from './components/TokenTaskDetail';
-import CreateTask from './components/CreateTask';
+
 
 const AppContent: React.FC = () => {
   const { connected } = useTonConnect();
@@ -31,7 +31,6 @@ const AppContent: React.FC = () => {
           <Route path="/channel-tasks" element={<ChannelTasks />} />
           <Route path="/token-tasks" element={<TokenTasks />} />
           <Route path="/token-task/:tokenId" element={<TokenTaskDetail />} />
-          <Route path="/create-task" element={<CreateTask />} />
         </Routes>
       </div>
       {showNavigationBar && <NavigationBar />}

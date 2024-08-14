@@ -19,7 +19,7 @@ interface Channel {
 const ChannelTasks: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const { balance, updateBalance } = useBalance();
+  const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -31,7 +31,6 @@ const ChannelTasks: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('/tasks', { params: { type: 'CHANNEL' } });
-      console.log('API response:', response.data);
       if (response.data && Array.isArray(response.data.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
         const channelTasks = response.data.tasks
@@ -86,25 +85,23 @@ const ChannelTasks: React.FC = () => {
 
         if (completeResponse.data.success) {
           const rewardAmount = parseInt(channel.reward.split(' ')[0]);
-          const newBalance = await updateBalance(rewardAmount, 'add');
           
-          if (newBalance !== null) {
-            addTransaction({
-              type: 'Получение',
-              amount: `${rewardAmount} LIBRA`,
-              description: `Подписка на канал ${channel.name}`
-            });
+          // Обновляем баланс
+          await fetchBalance();
+          
+          addTransaction({
+            type: 'Получение',
+            amount: `${rewardAmount} LIBRA`,
+            description: `Подписка на канал ${channel.name}`
+          });
 
-            showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
-            
-            setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
-            
-            const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
-            completedTasks.push(id);
-            localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
-          } else {
-            showMessage('Ошибка при обновлении баланса. Пожалуйста, попробуйте еще раз.');
-          }
+          showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
+          
+          setChannels(prevChannels => prevChannels.filter(c => c.id !== id));
+          
+          const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
+          completedTasks.push(id);
+          localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
         } else {
           showMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания.');
         }

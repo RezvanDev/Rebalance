@@ -11,7 +11,6 @@ import { BASE_URL } from "../constants/baseUrl";
 import { useTonConnectUI } from "@tonconnect/ui-react";
 import { useBalance } from "../context/BalanceContext";
 
-
 const MainMenu: React.FC = () => {
   const [tonConnectUI] = useTonConnectUI();
   const { connected, connectWallet, walletAddress, wallet } = useTonConnect();
@@ -25,7 +24,8 @@ const MainMenu: React.FC = () => {
     if (tg) {
       tg.BackButton.hide();
     }
-  }, [tg]);
+    fetchBalance(); // Fetch balance when component mounts
+  }, [tg, fetchBalance]);
   
   const fetchUser = useCallback(async (address: string) => {
     try {
@@ -42,8 +42,10 @@ const MainMenu: React.FC = () => {
     }
   }, [connected, wallet?.address, fetchUser]);
 
+  // Fetch balance periodically
   useEffect(() => {
-    fetchBalance();
+    const intervalId = setInterval(fetchBalance, 10000); // Fetch every 10 seconds
+    return () => clearInterval(intervalId);
   }, [fetchBalance]);
 
   const handleConnectWallet = async () => {
@@ -107,7 +109,6 @@ const MainMenu: React.FC = () => {
         );
       });
   };
-
 
   return (
     <div className="container">

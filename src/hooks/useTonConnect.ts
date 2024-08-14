@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 export function useTonConnect() {
   const [tonConnectUI] = useTonConnectUI();
-  const { balance, updateBalance, fetchBalance } = useBalance();
+  const { balance, fetchBalance } = useBalance();
   const wallet = useTonWallet();
   const address = useTonAddress();
 
@@ -19,7 +19,7 @@ export function useTonConnect() {
     connected: tonConnectUI.connected,
     wallet: tonConnectUI.account,
     walletAddress: address,
-    balance: balance,
+    balance,
     connectWallet: async () => {
       if (tonConnectUI.connected) {
         return; // Already connected

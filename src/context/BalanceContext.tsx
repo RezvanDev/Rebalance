@@ -4,7 +4,6 @@ import { useTelegram } from './TelegramContext';
 
 interface BalanceContextType {
   balance: number;
-  updateBalance: (amount: number, operation: 'add' | 'subtract' | 'set') => Promise<number | null>;
   fetchBalance: () => Promise<void>;
 }
 
@@ -18,7 +17,6 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (user?.id) {
       try {
         const response = await api.get(`/user/${user.id}/balance`);
-        console.log('Fetched balance:', response.data);
         if (response.data && typeof response.data.balance === 'number') {
           setBalance(response.data.balance);
         } else {
@@ -34,36 +32,8 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     fetchBalance();
   }, [fetchBalance]);
 
-  const updateBalance = async (amount: number, operation: 'add' | 'subtract' | 'set'): Promise<number | null> => {
-    if (user?.id) {
-      try {
-        let newBalance: number;
-        if (operation === 'set') {
-          newBalance = amount;
-        } else {
-          const response = await api.post(`/user/${user.id}/balance`, null, {
-            params: { amount, operation }
-          });
-          console.log('Updated balance:', response.data);
-          if (response.data && typeof response.data.balance === 'number') {
-            newBalance = response.data.balance;
-          } else {
-            console.error('Invalid balance data:', response.data);
-            return null;
-          }
-        }
-        setBalance(newBalance);
-        return newBalance;
-      } catch (error) {
-        console.error('Error updating balance:', error);
-        throw error;
-      }
-    }
-    return null;
-  };
-
   return (
-    <BalanceContext.Provider value={{ balance, updateBalance, fetchBalance }}>
+    <BalanceContext.Provider value={{ balance, fetchBalance }}>
       {children}
     </BalanceContext.Provider>
   );
