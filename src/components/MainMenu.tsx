@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useTelegram } from "../context/TelegramContext";
 import { useTransactions } from "../hooks/useTransactions";
@@ -26,24 +26,24 @@ const MainMenu: React.FC = () => {
     }
   }, [tg]);
   
-  useEffect(() => {
-    if (connected && wallet?.address) {
-      fetchUser(wallet.address);
-    }
-  }, [connected, wallet?.address]);
-
-  useEffect(() => {
-    fetchBalance();
-  }, [fetchBalance]);
-
-  const fetchUser = async (address: string) => {
+  const fetchUser = useCallback(async (address: string) => {
     try {
       const response = await axios.get(`${BASE_URL}/api/auth/user-by-address/${address}`);
       setUserData(response.data.user);
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (connected && wallet?.address) {
+      fetchUser(wallet.address);
+    }
+  }, [connected, wallet?.address, fetchUser]);
+
+  useEffect(() => {
+    fetchBalance();
+  }, [fetchBalance]);
 
   const handleConnectWallet = async () => {
     try {
@@ -106,6 +106,7 @@ const MainMenu: React.FC = () => {
         );
       });
   };
+
 
   return (
     <div className="container">
