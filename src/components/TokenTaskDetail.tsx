@@ -3,15 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
-import taskApi from '../api/taskApi';
+import api from '../utils/api';
 import '../styles/TokenTaskDetail.css';
 
-interface TokenTask {
+interface Task {
   id: number;
   title: string;
   description: string;
   reward: string;
-  channelUsername?: string;
+  channelUsername: string;
   tokenAddress: string;
   tokenAmount: number;
   maxParticipants: number;
@@ -22,18 +22,17 @@ interface TokenTask {
 const TokenTaskDetail: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const { tokenId } = useParams<{ tokenId: string }>();
+  const { taskId } = useParams<{ taskId: string }>();
   const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
-  const [task, setTask] = useState<TokenTask | null>(null);
+  const [task, setTask] = useState<Task | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [ownsToken, setOwnsToken] = useState(true);  // Заглушка
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchTask();
-  }, [tokenId]);
+  }, [taskId]);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -50,19 +49,12 @@ const TokenTaskDetail: React.FC = () => {
   const fetchTask = async () => {
     try {
       setLoading(true);
-      const response = await taskApi.getTasks('TOKEN');
-      if (response.success && Array.isArray(response.tasks)) {
-        const currentTask = response.tasks.find((t: TokenTask) => t.id === Number(tokenId));
-        if (currentTask) {
-          setTask(currentTask);
-          if (currentTask.channelUsername) {
-            checkSubscription(currentTask.channelUsername);
-          }
-        } else {
-          navigate('/token-tasks');
-        }
+      const response = await api.get(`/tasks/${taskId}`);
+      if (response.data && response.data.task) {
+        setTask(response.data.task);
+        checkSubscription(response.data.task.channelUsername);
       } else {
-        throw new Error('Неверный формат данных от сервера');
+        throw new Error('Задание не найдено');
       }
     } catch (error) {
       console.error('Error fetching task:', error);
@@ -74,8 +66,10 @@ const TokenTaskDetail: React.FC = () => {
 
   const checkSubscription = async (channelUsername: string) => {
     try {
-      const response = await taskApi.checkChannelSubscription(user?.id || '', channelUsername);
-      setIsSubscribed(response.isSubscribed);
+      const response = await api.get('/telegram/check-subscription', {
+        params: { telegramId: user?.id, channelUsername }
+      });
+      setIsSubscribed(response.data.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
       setIsSubscribed(false);
@@ -88,18 +82,18 @@ const TokenTaskDetail: React.FC = () => {
     }
   };
 
-  const handleBuyTokens = () => {
-    setMessage('Переход на страницу покупки токенов');
-    // Здесь можно добавить логику для перехода на страницу покупки токенов
-  };
-
   const handleCompleteTask = async () => {
     if (!task || !user) return;
 
     try {
-      const response = await taskApi.completeTask(task.id, user.id);
+      if (!isSubscribed) {
+        setMessage('Пожалуйста, подпишитесь на канал перед выполнением задания');
+        return;
+      }
 
-      if (response.success) {
+      const completeResponse = await api.post(`/tasks/${task.id}/complete`, { telegramId: user.id });
+
+      if (completeResponse.data.success) {
         const rewardAmount = Number(task.reward.split(' ')[0]);
         await fetchBalance();
         
@@ -113,7 +107,7 @@ const TokenTaskDetail: React.FC = () => {
         setTask({ ...task, completed: true });
         setTimeout(() => navigate('/token-tasks'), 3000);
       } else {
-        setMessage(response.error || 'Произошла ошибка при выполнении задания');
+        setMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания');
       }
     } catch (error: any) {
       console.error('Error completing task:', error);
@@ -144,21 +138,19 @@ const TokenTaskDetail: React.FC = () => {
       </div>
       <div className="info-card">
         <h2>Задание</h2>
-        {task.channelUsername && (
-          <div className="task-step" onClick={handleSubscribe}>
-            <p>1. Подписаться на канал @{task.channelUsername}</p>
-            {isSubscribed ? <span className="completed">✓</span> : <span className="arrow">›</span>}
-          </div>
-        )}
-        <div className="task-step" onClick={handleBuyTokens}>
-          <p>2. Купите минимум {task.tokenAmount} токенов</p>
-          {ownsToken ? <span className="completed">✓</span> : <span className="arrow">›</span>}
+        <div className="task-step" onClick={handleSubscribe}>
+          <p>1. Подписаться на канал @{task.channelUsername}</p>
+          {isSubscribed ? <span className="completed">✓</span> : <span className="arrow">›</span>}
+        </div>
+        <div className="task-step">
+          <p>2. Иметь {task.tokenAmount} токенов на балансе</p>
+          <span className="completed">✓</span>
         </div>
       </div>
       <button 
-        className="check-completion-button" 
+        className="complete-button"
         onClick={handleCompleteTask} 
-        disabled={task.completed || (task.channelUsername && !isSubscribed) || !ownsToken}
+        disabled={task.completed || !isSubscribed}
       >
         {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
       </button>

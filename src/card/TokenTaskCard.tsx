@@ -3,33 +3,19 @@ import { useNavigate } from 'react-router-dom';
 
 interface TokenTaskCardProps {
   id: number;
-  name: string;
+  title: string;
   reward: string;
+  tokenAmount: number;
   completed: boolean;
-  link: string;
-  channelUsername: string;
-  tokenAddress: string;
-  requiredTokenAmount: number;
-  onComplete: (id: number) => void;
 }
 
 const TokenTaskCard: React.FC<TokenTaskCardProps> = ({
-  id, name, reward, completed, link, channelUsername, tokenAddress, requiredTokenAmount, onComplete
+  id, title, reward, tokenAmount, completed
 }) => {
   const navigate = useNavigate();
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!completed) {
-      window.open(`https://t.me/${channelUsername}`, '_blank');
-    }
-  };
-
-  const handleComplete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!completed) {
-      onComplete(id);
-    }
+  const handleClick = () => {
+    navigate(`/token-task/${id}`);
   };
 
   return (
@@ -37,18 +23,16 @@ const TokenTaskCard: React.FC<TokenTaskCardProps> = ({
       onClick={handleClick}
       className={`token-item ${completed ? 'completed' : ''}`}
     >
-      <img src="/path-to-token-icon.png" alt="Token icon" className="token-icon" />
+      <div className="token-icon">₭</div>
       <div className="token-info">
-        <span className="token-name">{name}</span>
+        <span className="token-name">{title}</span>
         <span className="token-reward">{reward}</span>
-        <span className="token-requirement">Требуется: {requiredTokenAmount} токенов</span>
+        <span className="token-amount">Требуется: {tokenAmount} токенов</span>
       </div>
       {completed ? (
         <span className="completed-icon">✓</span>
       ) : (
-        <button onClick={handleComplete} className="complete-button">
-          Подтвердить
-        </button>
+        <span className="arrow-icon">›</span>
       )}
     </div>
   );
