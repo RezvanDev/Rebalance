@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
+
+import { useTransactions } from '../hooks/useTransactions';
+import { checkTokenOwnership } from '../utils/blockchain';
 import { taskApi } from '../api/taskApi';
 import '../styles/TokenTaskDetail.css';
 
@@ -9,30 +12,29 @@ interface Task {
   title: string;
   description: string;
   reward: string;
-  completed: boolean;
-  tokenAddress?: string;
-  tokenAmount?: number;
-  maxParticipants?: number;
-  currentParticipants?: number;
+  channelUsername: string;
+  tokenAddress: string;
+  tokenAmount: number;
+  maxParticipants: number;
+  currentParticipants: number;
 }
 
 const TokenTaskDetail: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
   const { taskId } = useParams<{ taskId: string }>();
+  
+  const { addTransaction } = useTransactions();
   const [task, setTask] = useState<Task | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [ownsToken, setOwnsToken] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isTaskCompleted, setIsTaskCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [debugMessage, setDebugMessage] = useState<string>('');
 
   useEffect(() => {
-    console.log('Component mounted, taskId:', taskId);
     if (taskId) {
-      console.log('Fetching task with id:', taskId);
       fetchTask(parseInt(taskId));
-    } else {
-      setDebugMessage('No taskId provided');
     }
   }, [taskId]);
 
@@ -50,98 +52,118 @@ const TokenTaskDetail: React.FC = () => {
 
   const fetchTask = async (id: number) => {
     try {
-      console.log('Starting to fetch task');
       setLoading(true);
       const taskData = await taskApi.getTaskDetails(id);
-      console.log('Received task data:', taskData);
       setTask(taskData);
-      if (taskData.tokenAddress && taskData.tokenAmount && user?.walletAddress) {
-        await checkTokenOwnership(taskData.tokenAddress, taskData.tokenAmount, user.walletAddress);
+      if (user) {
+        const subscriptionStatus = await checkChannelSubscription(taskData.channelUsername);
+        const tokenOwnershipStatus = await checkTokenOwnership(user.id, taskData.tokenAddress, taskData.tokenAmount);
+        setIsSubscribed(subscriptionStatus);
+        setOwnsToken(tokenOwnershipStatus);
       }
     } catch (error) {
       console.error('Error fetching task:', error);
       setMessage('Ошибка при загрузке задания');
-      setDebugMessage(`Error fetching task: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const checkTokenOwnership = async (tokenAddress: string, requiredAmount: number, walletAddress: string) => {
-    try {
-      console.log('Checking token ownership');
-      if (!user?.id) {
-        throw new Error('User ID is not available');
-      }
-      const balance = await taskApi.getBalance(user.id);
-      console.log('User balance:', balance, 'Required amount:', requiredAmount);
-      setOwnsToken(parseFloat(balance) >= requiredAmount);
-    } catch (error) {
-      console.error('Error checking token ownership:', error);
-      setOwnsToken(false);
-      setDebugMessage(`Error checking token ownership: ${error instanceof Error ? error.message : String(error)}`);
+  const handleSubscribe = () => {
+    if (task) {
+      window.open(`https://t.me/${task.channelUsername}`, '_blank');
     }
   };
 
-  const handleCompleteTask = async () => {
-    if (!task || !user) {
-      setDebugMessage('Cannot complete task: task or user is not available');
-      return;
-    }
+  const handleBuyTokens = () => {
+    setMessage('Переход на страницу покупки токенов');
+    // Здесь можно добавить логику для перехода на страницу покупки токенов
+  };
+
+  const handleCheckCompletion = async () => {
+    if (!task || !user) return;
+
     try {
-      console.log('Attempting to complete task');
       const response = await taskApi.completeTask(task.id, user.id);
-      console.log('Task completion response:', response);
-      setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
-      setTask({ ...task, completed: true });
+      if (response.success) {
+        const rewardAmount = parseFloat(task.reward);
+        addToBalance(rewardAmount);
+        addTransaction({
+          type: 'Получение',
+          amount: `${rewardAmount} REBA`,
+          description: `Выполнение задания ${task.title}`
+        });
+        await distributeReferralRewards(user.id, rewardAmount);
+        setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
+        setIsTaskCompleted(true);
+        setTimeout(() => navigate('/token-tasks'), 3000);
+      } else {
+        setMessage(response.error || 'Ошибка при выполнении задания');
+      }
     } catch (error) {
       console.error('Error completing task:', error);
       setMessage('Произошла ошибка при выполнении задания');
-      setDebugMessage(`Error completing task: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
-  console.log('Rendering, task:', task, 'loading:', loading);
+  const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
+    try {
+      const response = await taskApi.checkChannelSubscription(user?.id || '', channelUsername);
+      return response.isSubscribed;
+    } catch (error) {
+      console.error('Error checking channel subscription:', error);
+      return false;
+    }
+  };
 
   if (loading) {
     return <div className="loading">Загрузка...</div>;
   }
 
   if (!task) {
-    return (
-      <div className="error">
-        <p>Задание не найдено</p>
-        {debugMessage && <p className="debug-message">{debugMessage}</p>}
-      </div>
-    );
+    return <div className="error">Задание не найдено</div>;
   }
 
   return (
     <div className="token-task-detail">
-      <h1>{task.title}</h1>
-      <p className="description">{task.description}</p>
-      <div className="task-info">
-        <p className="reward">Награда: {task.reward}</p>
-        <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>
-        <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
+      <h1 className="task-title">{task.title}</h1>
+      <p className="task-description">{task.description}</p>
+      
+      <div className="task-info-box">
+        <div className="info-label">Награда</div>
+        <div className="info-value">{task.reward} REBA</div>
       </div>
+      
+      <div className="task-info-box">
+        <div className="info-label">Выполнили</div>
+        <div className="info-value">
+          {task.currentParticipants} из {task.maxParticipants}
+        </div>
+        <div className="info-subtext">В этом задании ограниченное количество участников</div>
+      </div>
+      
       <div className="task-requirements">
-        <p>Требования:</p>
-        <ul>
-          <li className={ownsToken ? 'completed' : ''}>
-            Иметь {task.tokenAmount} токенов на балансе
+        <h2>Задание</h2>
+        <ol>
+          <li onClick={handleSubscribe}>
+            Подписаться на канал {task.channelUsername}
+            {isSubscribed ? <span className="completed">✓</span> : <span className="arrow">›</span>}
           </li>
-        </ul>
+          <li onClick={handleBuyTokens}>
+            Купите минимум {task.tokenAmount} REBA
+            {ownsToken ? <span className="completed">✓</span> : <span className="arrow">›</span>}
+          </li>
+        </ol>
       </div>
-      <button
-        className="complete-button"
-        onClick={handleCompleteTask}
-        disabled={!ownsToken || task.completed}
+
+      <button 
+        className="check-completion-button" 
+        onClick={handleCheckCompletion} 
+        disabled={isTaskCompleted || !isSubscribed || !ownsToken}
       >
-        {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
+        {isTaskCompleted ? 'Задание выполнено' : 'Проверить выполнение'}
       </button>
       {message && <div className="message">{message}</div>}
-      {debugMessage && <div className="debug-message">{debugMessage}</div>}
     </div>
   );
 };
