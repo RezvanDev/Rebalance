@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useTransactions } from '../hooks/useTransactions';
+import { useBalance } from '../hooks/useBalance'; // Предполагаем, что у вас есть такой хук
 import { checkTokenOwnership } from '../utils/blockchain';
 import { taskApi } from '../api/taskApi';
 import '../styles/TokenTaskDetail.css';
@@ -22,8 +23,8 @@ const TokenTaskDetail: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
   const { taskId } = useParams<{ taskId: string }>();
-  
   const { addTransaction } = useTransactions();
+  const { addToBalance } = useBalance(); // Используем хук для обновления баланса
   const [task, setTask] = useState<Task | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [ownsToken, setOwnsToken] = useState(false);
@@ -103,6 +104,7 @@ const TokenTaskDetail: React.FC = () => {
       const response = await taskApi.completeTask(task.id, user.id);
       if (response.success) {
         const rewardAmount = parseFloat(task.reward);
+        addToBalance(rewardAmount); // Обновляем баланс пользователя
         addTransaction({
           type: 'Получение',
           amount: `${rewardAmount} REBA`,
@@ -173,7 +175,7 @@ const TokenTaskDetail: React.FC = () => {
       <button 
         className="check-completion-button" 
         onClick={handleCheckCompletion} 
-        disabled={isTaskCompleted || !isSubscribed || !ownsToken}
+        disabled={isTaskCompleted}
       >
         {isTaskCompleted ? 'Задание выполнено' : 'Проверить выполнение'}
       </button>
