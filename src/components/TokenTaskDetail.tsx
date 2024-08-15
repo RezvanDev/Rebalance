@@ -5,7 +5,7 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useBalance } from '../context/BalanceContext';
 import { checkTokenOwnership } from '../utils/blockchain';
 import api from '../utils/api';
-import '../styles/TaskDetail.css';
+import '../styles/TokenTaskDetail.css';
 
 interface Task {
   id: number;
