@@ -5,27 +5,49 @@ interface TokenTaskCardProps {
   id: number;
   name: string;
   reward: string;
-  link: string;
   completed: boolean;
+  link: string;
+  tokenAddress: string;
+  requiredTokenAmount: number;
+  onComplete: (id: number) => void;
 }
 
-const TokenTaskCard: React.FC<TokenTaskCardProps> = ({ id, name, reward, link, completed }) => {
+const TokenTaskCard: React.FC<TokenTaskCardProps> = ({
+  id, name, reward, completed, link, tokenAddress, requiredTokenAmount, onComplete
+}) => {
   const navigate = useNavigate();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!completed) {
+      navigate(link);
+    }
+  };
+
+  const handleComplete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!completed) {
+      onComplete(id);
+    }
+  };
 
   return (
     <div
-      onClick={() => navigate(link)}
+      onClick={handleClick}
       className={`token-item ${completed ? 'completed' : ''}`}
     >
-      <div className="token-icon">₭</div>
+      <img src="/path-to-token-icon.png" alt="Token icon" className="token-icon" />
       <div className="token-info">
         <span className="token-name">{name}</span>
         <span className="token-reward">{reward}</span>
+        <span className="token-requirement">Требуется: {requiredTokenAmount} токенов</span>
       </div>
       {completed ? (
         <span className="completed-icon">✓</span>
       ) : (
-        <span className="arrow-icon">›</span>
+        <button onClick={handleComplete} className="complete-button">
+          Выполнить
+        </button>
       )}
     </div>
   );
