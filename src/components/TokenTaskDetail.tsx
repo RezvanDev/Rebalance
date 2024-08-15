@@ -55,10 +55,7 @@ const TokenTaskDetail: React.FC = () => {
       const taskData = await taskApi.getTaskDetails(id);
       setTask(taskData);
       if (user) {
-        const subscriptionStatus = await checkChannelSubscription(taskData.channelUsername);
-        const tokenOwnershipStatus = await checkTokenOwnership(user.id, taskData.tokenAddress, taskData.tokenAmount);
-        setIsSubscribed(subscriptionStatus);
-        setOwnsToken(tokenOwnershipStatus);
+        await checkRequirements(taskData);
       }
     } catch (error) {
       console.error('Error fetching task:', error);
@@ -68,9 +65,21 @@ const TokenTaskDetail: React.FC = () => {
     }
   };
 
-  const handleSubscribe = () => {
+  const checkRequirements = async (taskData: Task) => {
+    const subscriptionStatus = await checkChannelSubscription(taskData.channelUsername);
+    const tokenOwnershipStatus = await checkTokenOwnership(user!.id, taskData.tokenAddress, taskData.tokenAmount);
+    setIsSubscribed(subscriptionStatus);
+    setOwnsToken(tokenOwnershipStatus);
+  };
+
+  const handleSubscribe = async () => {
     if (task) {
       window.open(`https://t.me/${task.channelUsername}`, '_blank');
+      // Даем небольшую задержку перед проверкой подписки
+      setTimeout(async () => {
+        const subscriptionStatus = await checkChannelSubscription(task.channelUsername);
+        setIsSubscribed(subscriptionStatus);
+      }, 5000); // 5 секунд задержки, можно настроить по необходимости
     }
   };
 
@@ -83,16 +92,22 @@ const TokenTaskDetail: React.FC = () => {
     if (!task || !user) return;
 
     try {
+      // Повторно проверяем требования перед отправкой запроса на выполнение
+      await checkRequirements(task);
+
+      if (!isSubscribed || !ownsToken) {
+        setMessage('Пожалуйста, выполните все условия задания');
+        return;
+      }
+
       const response = await taskApi.completeTask(task.id, user.id);
       if (response.success) {
         const rewardAmount = parseFloat(task.reward);
-        addToBalance(rewardAmount);
         addTransaction({
           type: 'Получение',
           amount: `${rewardAmount} REBA`,
           description: `Выполнение задания ${task.title}`
         });
-        await distributeReferralRewards(user.id, rewardAmount);
         setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
         setIsTaskCompleted(true);
         setTimeout(() => navigate('/token-tasks'), 3000);
