@@ -33,7 +33,20 @@ const MainMenu: React.FC = () => {
       tg.BackButton.hide();
     }
     fetchBalance();
-  }, [tg, fetchBalance]);
+    if (user?.id) {
+      fetchReferralCode();
+    }
+  }, [tg, fetchBalance, user]);
+  
+  const fetchReferralCode = async () => {
+    if (!user?.id) return;
+    try {
+      const response = await taskApi.getReferralCode(String(user.id));
+      setReferralCode(response.referralCode);
+    } catch (error) {
+      console.error("Error fetching referral code:", error);
+    }
+  };
   
   const fetchReferralData = useCallback(async () => {
     if (!user?.id) {
@@ -92,7 +105,7 @@ const MainMenu: React.FC = () => {
       console.error("Referral code not available");
       return;
     }
-    const referralLink = `https://t.me/your_bot?start=${referralCode}`;
+    const referralLink = `https://t.me/fmkffjkfmbot?start=${referralCode}`;
     console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
 
     if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
@@ -127,7 +140,7 @@ const MainMenu: React.FC = () => {
       console.error("Referral code not available");
       return;
     }
-    const referralLink = `https://t.me/your_bot?start=${referralCode}`;
+    const referralLink = `https://t.me/fmkffjkfmbot?start=${referralCode}`;
     navigator.clipboard
       .writeText(referralLink)
       .then(() => {
