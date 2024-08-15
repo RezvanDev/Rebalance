@@ -25,6 +25,32 @@ export const taskApi = {
     }
   },
 
+  completeTokenTask: async (taskId: number, telegramId: string) => {
+    try {
+      console.log(`Completing token task ${taskId} for user ${telegramId}`);
+      const response = await api.post(`/tasks/${taskId}/complete-token`, { telegramId });
+      console.log('Token task completion response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error completing token task:', error);
+      throw error;
+    }
+  },
+
+  checkTokenBalance: async (telegramId: string, tokenAddress: string, requiredAmount: number) => {
+    try {
+      console.log(`Checking token balance for user ${telegramId}`);
+      const response = await api.get('/ton/check-balance', {
+        params: { telegramId, tokenAddress, requiredAmount }
+      });
+      console.log('Token balance check response:', response.data);
+      return response.data.hasEnoughTokens;
+    } catch (error) {
+      console.error('Error checking token balance:', error);
+      throw error;
+    }
+  },
+
   getBalance: async (telegramId: string) => {
     try {
       console.log(`Fetching balance for user ${telegramId}`);
@@ -49,18 +75,17 @@ export const taskApi = {
     }
   },
 
-  // В taskApi.ts добавьте этот метод
-getReferralCode: async (telegramId: string) => {
-  try {
-    console.log(`Fetching referral code for user ${telegramId}`);
-    const response = await api.get(`/user/${telegramId}/referral-code`);
-    console.log('Referral code response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching referral code:', error);
-    throw error;
-  }
-},
+  getReferralCode: async (telegramId: string) => {
+    try {
+      console.log(`Fetching referral code for user ${telegramId}`);
+      const response = await api.get(`/user/${telegramId}/referral-code`);
+      console.log('Referral code response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching referral code:', error);
+      throw error;
+    }
+  },
 
   getReferrals: async (telegramId: string) => {
     try {
@@ -74,7 +99,6 @@ getReferralCode: async (telegramId: string) => {
     }
   },
 
-  // Добавим новый метод для получения общего заработка от рефералов
   getTotalReferralEarnings: async (telegramId: string) => {
     try {
       console.log(`Fetching total referral earnings for user ${telegramId}`);
@@ -87,3 +111,5 @@ getReferralCode: async (telegramId: string) => {
     }
   },
 };
+
+export default taskApi;

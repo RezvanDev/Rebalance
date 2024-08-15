@@ -35,7 +35,7 @@ const TokenTaskDetail: React.FC = () => {
   useEffect(() => {
     if (tg && tg.BackButton) {
       tg.BackButton.show();
-      tg.BackButton.onClick(() => navigate('/tasks'));
+      tg.BackButton.onClick(() => navigate('/token-tasks'));
     }
     return () => {
       if (tg && tg.BackButton) {
@@ -128,9 +128,11 @@ const TokenTaskDetail: React.FC = () => {
       <div className="task-requirements">
         <p>Требования:</p>
         <ul>
-          <li className={isSubscribed ? 'completed' : ''}>
-            Подписаться на канал @{task.channelUsername}
-          </li>
+          {task.channelUsername && (
+            <li className={isSubscribed ? 'completed' : ''}>
+              Подписаться на канал @{task.channelUsername}
+            </li>
+          )}
           <li className={ownsToken ? 'completed' : ''}>
             Иметь {task.tokenAmount} токенов на балансе
           </li>
@@ -139,7 +141,7 @@ const TokenTaskDetail: React.FC = () => {
       <button 
         className="complete-button"
         onClick={handleCompleteTask} 
-        disabled={!isSubscribed || !ownsToken || task.completed}
+        disabled={(!isSubscribed && task.channelUsername) || !ownsToken || task.completed}
       >
         {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
       </button>
