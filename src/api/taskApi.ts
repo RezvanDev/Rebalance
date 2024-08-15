@@ -49,17 +49,18 @@ export const taskApi = {
     }
   },
 
-  getReferralCode: async (telegramId: string) => {
-    try {
-      console.log(`Fetching referral code for user ${telegramId}`);
-      const response = await api.get(`/user/${telegramId}/referral-code`);
-      console.log('Referral code response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching referral code:', error);
-      throw error;
-    }
-  },
+  // В taskApi.ts добавьте этот метод
+getReferralCode: async (telegramId: string) => {
+  try {
+    console.log(`Fetching referral code for user ${telegramId}`);
+    const response = await api.get(`/user/${telegramId}/referral-code`);
+    console.log('Referral code response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching referral code:', error);
+    throw error;
+  }
+},
 
   getReferrals: async (telegramId: string) => {
     try {

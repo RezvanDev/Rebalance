@@ -26,6 +26,7 @@ const MainMenu: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNotification, setShowNotification] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   
   useEffect(() => {
     if (tg) {
@@ -87,7 +88,11 @@ const MainMenu: React.FC = () => {
   }, [fetchBalance]);
 
   const handleInvite = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
+    if (!referralCode) {
+      console.error("Referral code not available");
+      return;
+    }
+    const referralLink = `https://t.me/your_bot?start=${referralCode}`;
     console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
 
     if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
@@ -118,7 +123,11 @@ const MainMenu: React.FC = () => {
   };
 
   const handleCopyReferralLink = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
+    if (!referralCode) {
+      console.error("Referral code not available");
+      return;
+    }
+    const referralLink = `https://t.me/your_bot?start=${referralCode}`;
     navigator.clipboard
       .writeText(referralLink)
       .then(() => {
@@ -132,6 +141,7 @@ const MainMenu: React.FC = () => {
         );
       });
   };
+
 
   return (
     <div className="container">
