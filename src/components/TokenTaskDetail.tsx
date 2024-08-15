@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useTransactions } from '../hooks/useTransactions';
 import { useBalance } from '../context/BalanceContext';
-import { checkTokenOwnership } from '../utils/blockchain';
 import api from '../utils/api';
 import '../styles/TokenTaskDetail.css';
 
@@ -28,7 +27,7 @@ const TaskDetail: React.FC = () => {
   const { balance, fetchBalance } = useBalance();
   const [task, setTask] = useState<Task | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [ownsToken, setOwnsToken] = useState(false);
+  const [ownsToken, setOwnsToken] = useState(true);  // Заглушка: предполагаем, что токены уже куплены
   const [message, setMessage] = useState<string | null>(null);
   const [isTaskCompleted, setIsTaskCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -40,8 +39,8 @@ const TaskDetail: React.FC = () => {
       const response = await api.get(`/tasks/${taskId}`);
       if (response.data && response.data.task) {
         setTask(response.data.task);
-        if (user) {
-          await checkRequirements(response.data.task);
+        if (user && response.data.task.type === 'CHANNEL') {
+          await checkChannelSubscription(response.data.task.channelUsername);
         }
       } else {
         throw new Error('Неверный формат данных от сервера');
@@ -70,54 +69,34 @@ const TaskDetail: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const checkRequirements = async (taskData: Task) => {
-    if (taskData.type === 'CHANNEL' && taskData.channelUsername) {
-      const subscriptionStatus = await checkChannelSubscription(taskData.channelUsername);
-      setIsSubscribed(subscriptionStatus);
-    } else if (taskData.type === 'TOKEN' && taskData.tokenAddress && taskData.tokenAmount) {
-      const tokenOwnershipStatus = await checkTokenOwnership(user!.id, taskData.tokenAddress, taskData.tokenAmount);
-      setOwnsToken(tokenOwnershipStatus);
-    }
-  };
-
-  const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
+  const checkChannelSubscription = async (channelUsername?: string) => {
+    if (!channelUsername || !user) return;
     try {
-      const response = await api.get('/check-subscription', { params: { telegramId: user?.id, channelUsername } });
-      return response.data.isSubscribed;
+      const response = await api.get('/check-subscription', { params: { telegramId: user.id, channelUsername } });
+      setIsSubscribed(response.data.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
-      return false;
+      setMessage('Ошибка при проверке подписки на канал');
     }
   };
 
   const handleSubscribe = () => {
     if (task && task.channelUsername) {
       window.open(`https://t.me/${task.channelUsername}`, '_blank');
-      setTimeout(async () => {
-        const subscriptionStatus = await checkChannelSubscription(task.channelUsername!);
-        setIsSubscribed(subscriptionStatus);
-      }, 5000);
+      setMessage('Пожалуйста, подпишитесь на канал и нажмите "Проверить выполнение"');
     }
-  };
-
-  const handleBuyTokens = () => {
-    setMessage('Переход на страницу покупки токенов');
-    // Здесь можно добавить логику для перехода на страницу покупки токенов
   };
 
   const handleCheckCompletion = async () => {
     if (!task || !user) return;
 
     try {
-      await checkRequirements(task);
+      if (task.type === 'CHANNEL') {
+        await checkChannelSubscription(task.channelUsername);
+      }
 
       if (task.type === 'CHANNEL' && !isSubscribed) {
         setMessage('Пожалуйста, подпишитесь на канал');
-        return;
-      }
-
-      if (task.type === 'TOKEN' && !ownsToken) {
-        setMessage('Пожалуйста, приобретите необходимое количество токенов');
         return;
       }
 
@@ -194,9 +173,9 @@ const TaskDetail: React.FC = () => {
                 {isSubscribed ? <span className="completed">✓</span> : <span className="arrow">›</span>}
               </div>
             )}
-            <div onClick={handleBuyTokens} className="requirement-item">
+            <div className="requirement-item">
               Купите минимум {task.tokenAmount} REBA
-              {ownsToken ? <span className="completed">✓</span> : <span className="arrow">›</span>}
+              <span className="completed">✓</span>
             </div>
           </>
         )}
