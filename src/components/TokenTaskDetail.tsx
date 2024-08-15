@@ -107,8 +107,13 @@ const TokenTaskDetail: React.FC = () => {
     try {
       await checkRequirements(task);
 
-      if (!isSubscribed || !ownsToken) {
-        setMessage('Пожалуйста, выполните все условия задания');
+      if (!isSubscribed) {
+        setMessage('Пожалуйста, подпишитесь на канал');
+        return;
+      }
+
+      if (!ownsToken) {
+        setMessage('Пожалуйста, приобретите необходимое количество токенов');
         return;
       }
 
