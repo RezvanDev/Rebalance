@@ -35,10 +35,12 @@ const TokenTaskDetail: React.FC = () => {
     try {
       setLoading(true);
       console.log(`Fetching task with ID: ${tokenId}`);
-      const response = await api.get(`/tasks/${tokenId}`);
-      console.log('Task response:', response.data);
-      if (response.data && response.data.task) {
-        setTask(response.data.task);
+      const response = await taskApi.getTasks('TOKEN');
+      console.log('Tasks response:', response);
+      const task = response.tasks.find((t: Task) => t.id === Number(tokenId));
+      if (task) {
+        console.log('Found task:', task);
+        setTask(task);
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
         console.log('Completed tasks from localStorage:', completedTasks);
         if (completedTasks.includes(Number(tokenId))) {
@@ -72,34 +74,6 @@ const TokenTaskDetail: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const fetchTask = useCallback(async () => {
-    if (!user || !tokenId) return;
-    try {
-      setLoading(true);
-      console.log(`Fetching task with ID: ${tokenId}`);
-      const response = await taskApi.getTasks('TOKEN');
-      console.log('Tasks response:', response);
-      const task = response.tasks.find((t: Task) => t.id === Number(tokenId));
-      if (task) {
-        console.log('Found task:', task);
-        setTask(task);
-        const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
-        console.log('Completed tasks from localStorage:', completedTasks);
-        if (completedTasks.includes(Number(tokenId))) {
-          console.log(`Task ${tokenId} is marked as completed in localStorage`);
-          setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
-        }
-      } else {
-        throw new Error('Задание не найдено');
-      }
-    } catch (err: any) {
-      console.error('Error fetching task:', err);
-      setMessage('Ошибка при загрузке задания');
-    } finally {
-      setLoading(false);
-    }
-  }, [user, tokenId]);
-  
   const checkSubscription = useCallback(async () => {
     if (!task || !user) return;
     try {
@@ -112,22 +86,35 @@ const TokenTaskDetail: React.FC = () => {
       setIsSubscribed(false);
     }
   }, [task, user]);
-  
+
+  useEffect(() => {
+    if (task && user) {
+      checkSubscription();
+    }
+  }, [task, user, checkSubscription]);
+
+  const handleSubscribe = () => {
+    if (task?.channelUsername) {
+      window.open(`https://t.me/${task.channelUsername}`, '_blank');
+      setTimeout(checkSubscription, 3000);
+    }
+  };
+
   const handleCompleteTask = async () => {
     if (!task || !user) return;
-  
+
     try {
       await checkSubscription();
-  
+
       if (!isSubscribed) {
         setMessage('Пожалуйста, подпишитесь на канал перед выполнением задания');
         return;
       }
-  
+
       console.log(`Attempting to complete task ${task.id} for user ${user.id}`);
       const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
       console.log('Complete task response:', completeResponse);
-  
+
       if (completeResponse.success) {
         const rewardAmount = Number(task.reward.split(' ')[0]);
         await fetchBalance();
@@ -137,7 +124,7 @@ const TokenTaskDetail: React.FC = () => {
           amount: `${rewardAmount} LIBRA`,
           description: `Выполнение задания ${task.title}`
         });
-  
+
         setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
         setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
         
