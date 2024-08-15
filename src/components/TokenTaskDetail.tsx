@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
-import api from '../utils/api';
+import { taskApi } from '../api/taskApi';
 import '../styles/TokenTaskDetail.css';
 
 interface Task {
@@ -34,12 +34,15 @@ const TokenTaskDetail: React.FC = () => {
     if (!user || !tokenId) return;
     try {
       setLoading(true);
+      console.log(`Fetching task with ID: ${tokenId}`);
       const response = await api.get(`/tasks/${tokenId}`);
       console.log('Task response:', response.data);
       if (response.data && response.data.task) {
         setTask(response.data.task);
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
+        console.log('Completed tasks from localStorage:', completedTasks);
         if (completedTasks.includes(Number(tokenId))) {
+          console.log(`Task ${tokenId} is marked as completed in localStorage`);
           setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
         }
       } else {
@@ -69,48 +72,63 @@ const TokenTaskDetail: React.FC = () => {
     };
   }, [tg, navigate]);
 
+  const fetchTask = useCallback(async () => {
+    if (!user || !tokenId) return;
+    try {
+      setLoading(true);
+      console.log(`Fetching task with ID: ${tokenId}`);
+      const response = await taskApi.getTasks('TOKEN');
+      console.log('Tasks response:', response);
+      const task = response.tasks.find((t: Task) => t.id === Number(tokenId));
+      if (task) {
+        console.log('Found task:', task);
+        setTask(task);
+        const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
+        console.log('Completed tasks from localStorage:', completedTasks);
+        if (completedTasks.includes(Number(tokenId))) {
+          console.log(`Task ${tokenId} is marked as completed in localStorage`);
+          setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
+        }
+      } else {
+        throw new Error('Задание не найдено');
+      }
+    } catch (err: any) {
+      console.error('Error fetching task:', err);
+      setMessage('Ошибка при загрузке задания');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, tokenId]);
+  
   const checkSubscription = useCallback(async () => {
     if (!task || !user) return;
     try {
-      const response = await api.get('/telegram/check-subscription', {
-        params: { telegramId: user.id, channelUsername: task.channelUsername }
-      });
-      console.log('Subscription check response:', response.data);
-      setIsSubscribed(response.data.isSubscribed);
+      console.log(`Checking subscription for user ${user.id} to channel ${task.channelUsername}`);
+      const response = await taskApi.checkChannelSubscription(user.id.toString(), task.channelUsername);
+      console.log('Subscription check response:', response);
+      setIsSubscribed(response.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
       setIsSubscribed(false);
     }
   }, [task, user]);
-
-  useEffect(() => {
-    if (task && user) {
-      checkSubscription();
-    }
-  }, [task, user, checkSubscription]);
-
-  const handleSubscribe = () => {
-    if (task?.channelUsername) {
-      window.open(`https://t.me/${task.channelUsername}`, '_blank');
-      setTimeout(checkSubscription, 3000);
-    }
-  };
-
+  
   const handleCompleteTask = async () => {
     if (!task || !user) return;
-
+  
     try {
       await checkSubscription();
-
+  
       if (!isSubscribed) {
         setMessage('Пожалуйста, подпишитесь на канал перед выполнением задания');
         return;
       }
-
-      const completeResponse = await api.post(`/tasks/${task.id}/complete`, { telegramId: user.id });
-      console.log('Complete task response:', completeResponse.data);
-
-      if (completeResponse.data.success) {
+  
+      console.log(`Attempting to complete task ${task.id} for user ${user.id}`);
+      const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
+      console.log('Complete task response:', completeResponse);
+  
+      if (completeResponse.success) {
         const rewardAmount = Number(task.reward.split(' ')[0]);
         await fetchBalance();
         
@@ -119,22 +137,28 @@ const TokenTaskDetail: React.FC = () => {
           amount: `${rewardAmount} LIBRA`,
           description: `Выполнение задания ${task.title}`
         });
-
+  
         setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
         setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
         
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
         completedTasks.push(task.id);
         localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
+        console.log(`Updated completed tasks in localStorage:`, completedTasks);
         
         setTimeout(() => navigate('/token-tasks'), 3000);
       } else {
-        setMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания');
+        setMessage(completeResponse.error || 'Произошла ошибка при выполнении задания');
       }
     } catch (error: any) {
       console.error('Error completing task:', error);
       setMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания');
     }
+  };
+
+  const handleRefresh = () => {
+    fetchTask();
+    checkSubscription();
   };
 
   if (loading) {
@@ -175,6 +199,12 @@ const TokenTaskDetail: React.FC = () => {
         disabled={task.completed || !isSubscribed}
       >
         {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
+      </button>
+      <button 
+        className="refresh-button"
+        onClick={handleRefresh}
+      >
+        Обновить статус
       </button>
       {message && <div className="message">{message}</div>}
     </div>
