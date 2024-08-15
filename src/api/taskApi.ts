@@ -1,26 +1,14 @@
 import api from '../utils/api';
 
 export const taskApi = {
-  getTasks: async (type?: string) => {
+  getTasks: async (type: string) => {
     try {
-      console.log(`Fetching tasks${type ? ` of type: ${type}` : ''}`);
+      console.log(`Fetching tasks of type: ${type}`);
       const response = await api.get('/tasks', { params: { type } });
       console.log('Tasks response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      throw error;
-    }
-  },
-
-  getUserInfo: async (telegramId: string) => {
-    try {
-      console.log(`Fetching user info for telegramId: ${telegramId}`);
-      const response = await api.get(`/user/${telegramId}`);
-      console.log('User info response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching user info:', error);
       throw error;
     }
   },
@@ -36,7 +24,6 @@ export const taskApi = {
       throw error;
     }
   },
-  
 
   getBalance: async (telegramId: string) => {
     try {
@@ -99,32 +86,4 @@ getReferralCode: async (telegramId: string) => {
       throw error;
     }
   },
-
-  getTaskDetails: async (taskId: number) => {
-    try {
-      console.log(`Fetching details for task ${taskId}`);
-      const response = await api.get(`/tasks/${taskId}`);
-      console.log('Task details response:', response.data);
-      if (!response.data.success || !response.data.task) {
-        throw new Error(response.data.error || 'Task not found');
-      }
-      return response.data.task;
-    } catch (error) {
-      console.error('Error fetching task details:', error);
-      throw error;
-    }
-  },
-
-  checkSubscription: async (telegramId: string, channelUsername: string) => {
-    try {
-      console.log(`Checking subscription for user ${telegramId} to channel ${channelUsername}`);
-      const response = await api.get('/check-subscription', { params: { telegramId, channelUsername } });
-      console.log('Subscription check response:', response.data);
-      return response.data.isSubscribed;
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-      throw error;
-    }
-  },
-
 };

@@ -1,116 +1,96 @@
 .token-task-detail {
-  background-color: #000000;
-  color: white;
   padding: 20px;
-  min-height: 100vh;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-.task-title {
-  font-size: 24px;
-  margin: 0 0 20px 0;
-  text-align: center;
-}
-
-.task-description {
-  font-size: 14px;
-  color: #999;
-  text-align: center;
+.token-task-detail h1 {
+  color: #333;
   margin-bottom: 20px;
 }
 
-.task-info-box {
-  background-color: #2C2C2C;
-  border-radius: 10px;
+.description {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.task-info {
+  background-color: #f5f5f5;
+  border-radius: 8px;
   padding: 15px;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
-.info-label {
-  font-size: 14px;
-  color: #999;
-  margin-bottom: 5px;
+.reward, .token-amount, .progress {
+  margin: 5px 0;
 }
 
-.info-value {
-  font-size: 20px;
+.reward {
+  color: #4caf50;
   font-weight: bold;
 }
 
-.info-subtext {
-  font-size: 12px;
-  color: #999;
-  margin-top: 5px;
-}
-
 .task-requirements {
-  background-color: #2C2C2C;
-  border-radius: 10px;
-  padding: 15px;
   margin-bottom: 20px;
 }
 
-.task-requirements h2 {
-  font-size: 16px;
-  margin: 0 0 10px 0;
-}
-
-.task-requirements ol {
+.task-requirements ul {
   list-style-type: none;
-  padding: 0;
+  padding-left: 0;
 }
 
 .task-requirements li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #3C3C3C;
-  cursor: pointer;
+  margin: 10px 0;
+  padding-left: 25px;
+  position: relative;
 }
 
-.task-requirements li:last-child {
-  border-bottom: none;
+.task-requirements li::before {
+  content: '✗';
+  color: #f44336;
+  position: absolute;
+  left: 0;
 }
 
-.completed {
-  color: #4CAF50;
-  font-size: 20px;
+.task-requirements li.completed::before {
+  content: '✓';
+  color: #4caf50;
 }
 
-.arrow {
-  color: #999;
-  font-size: 20px;
-}
-
-.check-completion-button {
-  background-color: #4CAF50;
+.complete-button {
+  background-color: #2196f3;
   color: white;
   border: none;
-  border-radius: 5px;
-  padding: 15px;
-  width: 100%;
-  font-size: 16px;
+  padding: 10px 20px;
+  border-radius: 4px;
   cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
 }
 
-.check-completion-button:disabled {
-  background-color: #2C2C2C;
-  color: #999;
+.complete-button:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+
+.complete-button:disabled {
+  background-color: #bdbdbd;
   cursor: not-allowed;
 }
 
 .message {
   margin-top: 20px;
   padding: 10px;
-  background-color: #2C2C2C;
-  border-radius: 5px;
-  text-align: center;
+  border-radius: 4px;
+  background-color: #e8f5e9;
+  color: #4caf50;
 }
 
 .loading, .error {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  text-align: center;
+  margin-top: 50px;
   font-size: 18px;
+}
+
+.error {
+  color: #f44336;
 }
