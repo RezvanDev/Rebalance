@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-
 import { useTransactions } from '../hooks/useTransactions';
 import { checkTokenOwnership } from '../utils/blockchain';
 import { taskApi } from '../api/taskApi';
