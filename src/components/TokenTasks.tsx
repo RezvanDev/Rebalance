@@ -13,6 +13,7 @@ interface TokenTask {
   reward: string;
   completed: boolean;
   link: string;
+  channelUsername: string;
   tokenAddress: string;
   requiredTokenAmount: number;
 }
@@ -40,6 +41,7 @@ const TokenTasks: React.FC = () => {
           reward: `${task.reward} LIBRA`,
           completed: completedTasks.includes(task.id),
           link: `/token-task/${task.id}`,
+          channelUsername: task.channelUsername,
           tokenAddress: task.tokenAddress,
           requiredTokenAmount: task.tokenAmount
         }));
@@ -81,6 +83,24 @@ const TokenTasks: React.FC = () => {
     const task = tasks.find(t => t.id === id);
     if (task && user && !task.completed) {
       try {
+        // Проверка подписки на канал
+        const subscriptionResponse = await api.get('/telegram/check-subscription', {
+          params: { telegramId: user.id, channelUsername: task.channelUsername }
+        });
+
+        if (!subscriptionResponse.data.isSubscribed) {
+          showMessage('Пожалуйста, подпишитесь на канал перед выполнением задания.');
+          return;
+        }
+
+        // Здесь будет проверка токенов (пока заглушка)
+        const hasEnoughTokens = true; // В будущем здесь будет реальная проверка
+
+        if (!hasEnoughTokens) {
+          showMessage('У вас недостаточно токенов для выполнения этого задания.');
+          return;
+        }
+
         const completeResponse = await api.post(`/tasks/${id}/complete`, { telegramId: user.id });
 
         if (completeResponse.data.success) {

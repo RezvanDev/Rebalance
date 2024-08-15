@@ -7,20 +7,21 @@ interface TokenTaskCardProps {
   reward: string;
   completed: boolean;
   link: string;
+  channelUsername: string;
   tokenAddress: string;
   requiredTokenAmount: number;
   onComplete: (id: number) => void;
 }
 
 const TokenTaskCard: React.FC<TokenTaskCardProps> = ({
-  id, name, reward, completed, link, tokenAddress, requiredTokenAmount, onComplete
+  id, name, reward, completed, link, channelUsername, tokenAddress, requiredTokenAmount, onComplete
 }) => {
   const navigate = useNavigate();
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!completed) {
-      navigate(link);
+      window.open(`https://t.me/${channelUsername}`, '_blank');
     }
   };
 
@@ -46,7 +47,7 @@ const TokenTaskCard: React.FC<TokenTaskCardProps> = ({
         <span className="completed-icon">✓</span>
       ) : (
         <button onClick={handleComplete} className="complete-button">
-          Выполнить
+          Подтвердить
         </button>
       )}
     </div>
