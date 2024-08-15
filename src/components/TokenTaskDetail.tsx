@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
-import api from '../utils/api';
+import taskApi from '../api/taskApi';
 import '../styles/TokenTaskDetail.css';
 
 interface Task {
@@ -22,7 +22,7 @@ interface Task {
 const TokenTaskDetail: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
-  const { taskId } = useParams<{ taskId: string }>();
+  const { tokenId } = useParams<{ tokenId: string }>();
   const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
   const [task, setTask] = useState<Task | null>(null);
@@ -32,7 +32,7 @@ const TokenTaskDetail: React.FC = () => {
 
   useEffect(() => {
     fetchTask();
-  }, [taskId]);
+  }, [tokenId]);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -46,15 +46,25 @@ const TokenTaskDetail: React.FC = () => {
     };
   }, [tg, navigate]);
 
+  useEffect(() => {
+    if (task && user) {
+      checkSubscription();
+    }
+  }, [task, user]);
+
   const fetchTask = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/tasks/${taskId}`);
-      if (response.data && response.data.task) {
-        setTask(response.data.task);
-        checkSubscription(response.data.task.channelUsername);
+      const response = await taskApi.getTasks('TOKEN');
+      if (response.success && Array.isArray(response.tasks)) {
+        const currentTask = response.tasks.find((t: Task) => t.id === Number(tokenId));
+        if (currentTask) {
+          setTask(currentTask);
+        } else {
+          throw new Error('Задание не найдено');
+        }
       } else {
-        throw new Error('Задание не найдено');
+        throw new Error('Неверный формат данных от сервера');
       }
     } catch (error) {
       console.error('Error fetching task:', error);
@@ -64,12 +74,11 @@ const TokenTaskDetail: React.FC = () => {
     }
   };
 
-  const checkSubscription = async (channelUsername: string) => {
+  const checkSubscription = async () => {
+    if (!task || !user) return;
     try {
-      const response = await api.get('/telegram/check-subscription', {
-        params: { telegramId: user?.id, channelUsername }
-      });
-      setIsSubscribed(response.data.isSubscribed);
+      const response = await taskApi.checkChannelSubscription(user.id, task.channelUsername);
+      setIsSubscribed(response.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
       setIsSubscribed(false);
@@ -79,6 +88,10 @@ const TokenTaskDetail: React.FC = () => {
   const handleSubscribe = () => {
     if (task?.channelUsername) {
       window.open(`https://t.me/${task.channelUsername}`, '_blank');
+      // После открытия ссылки, добавляем небольшую задержку и проверяем подписку снова
+      setTimeout(() => {
+        checkSubscription();
+      }, 3000);
     }
   };
 
@@ -86,14 +99,17 @@ const TokenTaskDetail: React.FC = () => {
     if (!task || !user) return;
 
     try {
+      // Проверяем подписку еще раз перед выполнением задания
+      await checkSubscription();
+
       if (!isSubscribed) {
         setMessage('Пожалуйста, подпишитесь на канал перед выполнением задания');
         return;
       }
 
-      const completeResponse = await api.post(`/tasks/${task.id}/complete`, { telegramId: user.id });
+      const completeResponse = await taskApi.completeTask(task.id, user.id);
 
-      if (completeResponse.data.success) {
+      if (completeResponse.success) {
         const rewardAmount = Number(task.reward.split(' ')[0]);
         await fetchBalance();
         
@@ -107,7 +123,7 @@ const TokenTaskDetail: React.FC = () => {
         setTask({ ...task, completed: true });
         setTimeout(() => navigate('/token-tasks'), 3000);
       } else {
-        setMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания');
+        setMessage(completeResponse.error || 'Произошла ошибка при выполнении задания');
       }
     } catch (error: any) {
       console.error('Error completing task:', error);
