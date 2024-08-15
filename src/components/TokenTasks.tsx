@@ -74,13 +74,13 @@ const TokenTasks: React.FC = () => {
       <div className="token-list">
         {tasks.filter(task => !task.completed).map((task) => (
           <TokenTaskCard
-            key={task.id}
-            id={task.id}
-            name={task.title}
-            reward={task.reward}
-            link={`/token-task/${task.id}`}
-            completed={task.completed}
-          />
+          key={task.id}
+          id={task.id}
+          name={task.title}
+          reward={task.reward}
+          link={`/token-task/${task.id}`}
+          completed={task.completed}
+        />
         ))}
       </div>
     </div>
