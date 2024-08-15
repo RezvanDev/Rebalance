@@ -26,7 +26,7 @@ const TokenTaskDetail: React.FC = () => {
   const { addTransaction } = useTransactions();
   const [task, setTask] = useState<TokenTask | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [ownsToken, setOwnsToken] = useState(false);
+  const [ownsToken, setOwnsToken] = useState(true);  // Заглушка: всегда true
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,7 +64,7 @@ const TokenTaskDetail: React.FC = () => {
             maxParticipants: currentTask.maxParticipants,
             completed: currentTask.completed
           });
-          checkRequirements(currentTask);
+          checkSubscription(currentTask.channelUsername);
         } else {
           navigate('/token-tasks');
         }
@@ -79,30 +79,13 @@ const TokenTaskDetail: React.FC = () => {
     }
   };
 
-  const checkRequirements = async (task: TokenTask) => {
-    if (task.channelLink) {
-      const subscribed = await checkChannelSubscription(task.channelLink);
-      setIsSubscribed(subscribed);
-    }
-    if (task.tokenAddress && task.requiredTokenAmount && user) {
-      const hasTokens = await taskApi.checkTokenBalance(user.id, task.tokenAddress, task.requiredTokenAmount);
-      setOwnsToken(hasTokens);
-    }
-  };
-
-  const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
-    if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-      console.error('Telegram Web App is not properly initialized');
-      return false;
-    }
-  
+  const checkSubscription = async (channelUsername: string) => {
     try {
-      const formattedChannelUsername = channelUsername.startsWith('@') ? channelUsername : `@${channelUsername}`;
-      const chatMember = await tg.getChatMember(formattedChannelUsername);
-      return ['member', 'administrator', 'creator'].includes(chatMember.status);
+      const response = await taskApi.checkChannelSubscription(user?.id, channelUsername);
+      setIsSubscribed(response.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
-      return false;
+      setIsSubscribed(false);
     }
   };
 
@@ -126,11 +109,11 @@ const TokenTaskDetail: React.FC = () => {
     }
 
     try {
-      const completeResponse = await taskApi.completeTokenTask(task.id, user.id);
+      const completeResponse = await taskApi.completeTask(task.id, user.id);
 
       if (completeResponse.success) {
         const rewardAmount = Number(task.reward.split(' ')[0]);
-        addToBalance(rewardAmount);
+        await fetchBalance();  // Обновляем баланс
         
         addTransaction({
           type: 'Получение',

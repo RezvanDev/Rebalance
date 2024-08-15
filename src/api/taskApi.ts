@@ -110,6 +110,21 @@ export const taskApi = {
       throw error;
     }
   },
+
+  checkChannelSubscription: async (telegramId: string, channelUsername: string) => {
+    try {
+      console.log(`Checking channel subscription for user ${telegramId} to channel ${channelUsername}`);
+      const response = await api.get('/telegram/check-subscription', {
+        params: { telegramId, channelUsername }
+      });
+      console.log('Channel subscription check response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking channel subscription:', error);
+      throw error;
+    }
+  },
 };
+
 
 export default taskApi;

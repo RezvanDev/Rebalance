@@ -2,16 +2,19 @@
   padding: 20px;
   max-width: 600px;
   margin: 0 auto;
+  font-family: Arial, sans-serif;
 }
 
 .token-task-detail h1 {
   color: #333;
   margin-bottom: 20px;
+  font-size: 24px;
 }
 
 .task-description {
   color: #666;
   margin-bottom: 20px;
+  line-height: 1.5;
 }
 
 .info-card {
@@ -19,6 +22,13 @@
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.info-card h2 {
+  color: #333;
+  font-size: 18px;
+  margin-bottom: 10px;
 }
 
 .reward, .progress {
@@ -28,6 +38,13 @@
 .reward {
   color: #4caf50;
   font-weight: bold;
+  font-size: 18px;
+}
+
+.progress-note {
+  font-size: 14px;
+  color: #666;
+  margin-top: 5px;
 }
 
 .task-step {
@@ -35,18 +52,32 @@
   padding-left: 25px;
   position: relative;
   cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.task-step:hover {
+  background-color: #e0e0e0;
+}
+
+.task-step p {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .task-step .arrow {
   color: #f44336;
   position: absolute;
   left: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .task-step .completed {
   color: #4caf50;
   position: absolute;
   left: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .check-completion-button {
@@ -58,6 +89,8 @@
   cursor: pointer;
   font-size: 16px;
   transition: background-color 0.3s ease;
+  width: 100%;
+  margin-top: 20px;
 }
 
 .check-completion-button:hover:not(:disabled) {
@@ -75,6 +108,7 @@
   border-radius: 4px;
   background-color: #e8f5e9;
   color: #4caf50;
+  text-align: center;
 }
 
 .loading, .error {
