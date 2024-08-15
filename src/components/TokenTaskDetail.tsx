@@ -35,6 +35,7 @@ const TokenTaskDetail: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get(`/tasks/${tokenId}`);
+      console.log('Task response:', response.data);
       if (response.data && response.data.task) {
         setTask(response.data.task);
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
@@ -74,8 +75,8 @@ const TokenTaskDetail: React.FC = () => {
       const response = await api.get('/telegram/check-subscription', {
         params: { telegramId: user.id, channelUsername: task.channelUsername }
       });
+      console.log('Subscription check response:', response.data);
       setIsSubscribed(response.data.isSubscribed);
-      console.log('Subscription status:', response.data.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
       setIsSubscribed(false);
@@ -106,14 +107,8 @@ const TokenTaskDetail: React.FC = () => {
         return;
       }
 
-      // Здесь можно добавить проверку баланса токенов, когда эта функциональность будет готова
-      // const hasEnoughTokens = await checkTokenBalance(user.id, task.tokenAddress, task.tokenAmount);
-      // if (!hasEnoughTokens) {
-      //   setMessage('У вас недостаточно токенов для выполнения этого задания');
-      //   return;
-      // }
-
       const completeResponse = await api.post(`/tasks/${task.id}/complete`, { telegramId: user.id });
+      console.log('Complete task response:', completeResponse.data);
 
       if (completeResponse.data.success) {
         const rewardAmount = Number(task.reward.split(' ')[0]);
