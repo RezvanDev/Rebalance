@@ -1,78 +1,116 @@
-.token-tasks-container {
+.token-task-detail {
   background-color: #000000;
   color: white;
   padding: 20px;
   min-height: 100vh;
 }
 
-.token-tasks-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.task-title {
+  font-size: 24px;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.task-description {
+  font-size: 14px;
+  color: #999;
+  text-align: center;
   margin-bottom: 20px;
 }
 
-.token-tasks-header h1 {
-  font-size: 24px;
-  margin: 0;
-}
-
-.refresh-button {
-  background-color: #2C2C2C;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 20px;
-  color: white;
-  cursor: pointer;
-}
-
-.token-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.token-item {
+.task-info-box {
   background-color: #2C2C2C;
   border-radius: 10px;
   padding: 15px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
+  margin-bottom: 15px;
 }
 
-.token-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #4CAF50;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 15px;
-  font-size: 20px;
-}
-
-.token-info {
-  flex-grow: 1;
-}
-
-.token-name {
-  display: block;
-  font-size: 16px;
+.info-label {
+  font-size: 14px;
+  color: #999;
   margin-bottom: 5px;
 }
 
-.token-reward {
-  font-size: 14px;
-  color: #999;
+.info-value {
+  font-size: 20px;
+  font-weight: bold;
 }
 
-.arrow-icon {
+.info-subtext {
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
+}
+
+.task-requirements {
+  background-color: #2C2C2C;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.task-requirements h2 {
+  font-size: 16px;
+  margin: 0 0 10px 0;
+}
+
+.task-requirements ol {
+  list-style-type: none;
+  padding: 0;
+}
+
+.task-requirements li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #3C3C3C;
+  cursor: pointer;
+}
+
+.task-requirements li:last-child {
+  border-bottom: none;
+}
+
+.completed {
+  color: #4CAF50;
   font-size: 20px;
+}
+
+.arrow {
+  color: #999;
+  font-size: 20px;
+}
+
+.check-completion-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 15px;
+  width: 100%;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.check-completion-button:disabled {
+  background-color: #2C2C2C;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.message {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #2C2C2C;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.loading, .error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 18px;
 }
