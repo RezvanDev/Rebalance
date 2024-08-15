@@ -72,7 +72,9 @@ const TaskDetail: React.FC = () => {
   const checkChannelSubscription = async (channelUsername?: string) => {
     if (!channelUsername || !user) return;
     try {
+      console.log('Checking subscription for channel:', channelUsername);
       const response = await api.get('/check-subscription', { params: { telegramId: user.id, channelUsername } });
+      console.log('Subscription check response:', response.data);
       setIsSubscribed(response.data.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
@@ -91,6 +93,9 @@ const TaskDetail: React.FC = () => {
     if (!task || !user) return;
 
     try {
+      console.log('Checking completion for task:', task);
+      console.log('User:', user);
+
       if (task.type === 'CHANNEL') {
         await checkChannelSubscription(task.channelUsername);
       }
@@ -100,7 +105,10 @@ const TaskDetail: React.FC = () => {
         return;
       }
 
+      console.log('Sending completion request');
       const response = await api.post(`/tasks/${task.id}/complete`, { telegramId: user.id });
+      console.log('Completion response:', response.data);
+
       if (response.data.success) {
         const rewardAmount = parseFloat(task.reward);
         
@@ -189,6 +197,11 @@ const TaskDetail: React.FC = () => {
         {isTaskCompleted ? 'Задание выполнено' : 'Проверить выполнение'}
       </button>
       {message && <div className="message">{message}</div>}
+      <div className="debug-info">
+        <p>User ID: {user?.id}</p>
+        <p>Wallet Address: {user?.walletAddress || 'Не указан'}</p>
+        <p>Is Subscribed: {isSubscribed ? 'Да' : 'Нет'}</p>
+      </div>
     </div>
   );
 };
