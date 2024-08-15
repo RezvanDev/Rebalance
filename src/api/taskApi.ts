@@ -86,4 +86,17 @@ getReferralCode: async (telegramId: string) => {
       throw error;
     }
   },
+
+  getTaskDetails: async (taskId: number) => {
+    try {
+      console.log(`Fetching details for task ${taskId}`);
+      const response = await api.get(`/tasks/${taskId}`);
+      console.log('Task details response:', response.data);
+      return response.data.task;
+    } catch (error) {
+      console.error('Error fetching task details:', error);
+      throw error;
+    }
+  },
+
 };
