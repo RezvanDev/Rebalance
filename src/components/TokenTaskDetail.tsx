@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import { useUserBalance } from '../hooks/useUserBalance';
+import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
-import taskApi from '../utils/taskApi';
+import taskApi from '../api/taskApi';
 import '../styles/TokenTaskDetail.css';
 
 interface TokenTask {
@@ -22,7 +22,7 @@ const TokenTaskDetail: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
   const { tokenId } = useParams<{ tokenId: string }>();
-  const { addToBalance } = useUserBalance();
+  const { fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
   const [task, setTask] = useState<TokenTask | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
