@@ -75,6 +75,7 @@ const TokenTaskDetail: React.FC = () => {
         params: { telegramId: user.id, channelUsername: task.channelUsername }
       });
       setIsSubscribed(response.data.isSubscribed);
+      console.log('Subscription status:', response.data.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
       setIsSubscribed(false);
@@ -104,6 +105,13 @@ const TokenTaskDetail: React.FC = () => {
         setMessage('Пожалуйста, подпишитесь на канал перед выполнением задания');
         return;
       }
+
+      // Здесь можно добавить проверку баланса токенов, когда эта функциональность будет готова
+      // const hasEnoughTokens = await checkTokenBalance(user.id, task.tokenAddress, task.tokenAmount);
+      // if (!hasEnoughTokens) {
+      //   setMessage('У вас недостаточно токенов для выполнения этого задания');
+      //   return;
+      // }
 
       const completeResponse = await api.post(`/tasks/${task.id}/complete`, { telegramId: user.id });
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import '../styles/TaskCard.css';
 
 interface TokenTaskCardProps {
   id: number;
@@ -7,26 +7,28 @@ interface TokenTaskCardProps {
   reward: string;
   tokenAmount: number;
   completed: boolean;
+  onClick: (taskId: number) => void;
 }
 
-const TokenTaskCard: React.FC<TokenTaskCardProps> = ({
-  id, title, reward, tokenAmount, completed
+const TokenTaskCard: React.FC<TokenTaskCardProps> = ({ 
+  id, 
+  title, 
+  reward, 
+  tokenAmount, 
+  completed, 
+  onClick 
 }) => {
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    navigate(`/token-task/${id}`);
-  };
-
   return (
     <div
-      onClick={handleClick}
-      className={`token-item ${completed ? 'completed' : ''}`}
+      className={`task-card ${completed ? 'completed' : ''}`}
+      onClick={() => onClick(id)}
     >
-      <div className="token-icon">₭</div>
-      <div className="token-info">
-        <span className="token-name">{title}</span>
-        <span className="token-reward">{reward}</span>
+      <div className="task-icon">
+        ₭
+      </div>
+      <div className="task-info">
+        <span className="task-name">{title}</span>
+        <span className="task-reward">{reward}</span>
         <span className="token-amount">Требуется: {tokenAmount} токенов</span>
       </div>
       {completed ? (

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
-import TaskCard from './TaskCard';
+import TokenTaskCard from '../card/TokenTaskCard';
 import api from '../utils/api';
 import "../styles/TokenTasks.css";
 
@@ -12,6 +12,7 @@ interface TokenTask {
   reward: string;
   tokenAmount: number;
   completed: boolean;
+  channelUsername: string; // Добавлено поле channelUsername
 }
 
 const TokenTasks: React.FC = () => {
@@ -34,7 +35,8 @@ const TokenTasks: React.FC = () => {
           title: task.title,
           reward: `${task.reward} LIBRA`,
           tokenAmount: task.tokenAmount,
-          completed: completedTasks.includes(task.id)
+          completed: completedTasks.includes(task.id),
+          channelUsername: task.channelUsername // Добавлено поле channelUsername
         }));
         setTasks(tokenTasks);
         setError(null);
@@ -87,9 +89,13 @@ const TokenTasks: React.FC = () => {
       {tasks.length > 0 ? (
         <div className="token-list">
           {tasks.map((task) => (
-            <TaskCard
+            <TokenTaskCard
               key={task.id}
-              task={task}
+              id={task.id}
+              title={task.title}
+              reward={task.reward}
+              tokenAmount={task.tokenAmount}
+              completed={task.completed}
               onClick={() => handleTaskClick(task.id)}
             />
           ))}
