@@ -13,6 +13,18 @@ export const taskApi = {
     }
   },
 
+  getUserInfo: async (telegramId: string) => {
+    try {
+      console.log(`Fetching user info for telegramId: ${telegramId}`);
+      const response = await api.get(`/user/${telegramId}`);
+      console.log('User info response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      throw error;
+    }
+  },
+
   completeTask: async (taskId: number, telegramId: string) => {
     try {
       console.log(`Completing task ${taskId} for user ${telegramId}`);
@@ -24,6 +36,7 @@ export const taskApi = {
       throw error;
     }
   },
+  
 
   getBalance: async (telegramId: string) => {
     try {

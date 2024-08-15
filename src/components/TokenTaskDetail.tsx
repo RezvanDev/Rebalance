@@ -96,11 +96,11 @@ const TaskDetail: React.FC = () => {
       console.log('Checking completion for task:', task);
       console.log('User:', user);
 
-      if (task.type === 'CHANNEL') {
+      if (task.type === 'CHANNEL' || (task.type === 'TOKEN' && task.channelUsername)) {
         await checkChannelSubscription(task.channelUsername);
       }
 
-      if (task.type === 'CHANNEL' && !isSubscribed) {
+      if ((task.type === 'CHANNEL' || (task.type === 'TOKEN' && task.channelUsername)) && !isSubscribed) {
         setMessage('Пожалуйста, подпишитесь на канал');
         return;
       }
@@ -148,7 +148,7 @@ const TaskDetail: React.FC = () => {
   return (
     <div className="task-detail">
       <h1 className="task-title">{task.title}</h1>
-      {task.type === 'TOKEN' && task.description && (
+      {task.description && (
         <p className="task-description">{task.description}</p>
       )}
       
@@ -167,25 +167,17 @@ const TaskDetail: React.FC = () => {
       
       <div className="task-requirements">
         <h2>Задание</h2>
-        {task.type === 'CHANNEL' && task.channelUsername && (
+        {task.channelUsername && (
           <div onClick={handleSubscribe} className="requirement-item">
             Подписаться на канал {task.channelUsername}
             {isSubscribed ? <span className="completed">✓</span> : <span className="arrow">›</span>}
           </div>
         )}
-        {task.type === 'TOKEN' && (
-          <>
-            {task.channelUsername && (
-              <div onClick={handleSubscribe} className="requirement-item">
-                Подписаться на канал {task.channelUsername}
-                {isSubscribed ? <span className="completed">✓</span> : <span className="arrow">›</span>}
-              </div>
-            )}
-            <div className="requirement-item">
-              Купите минимум {task.tokenAmount} REBA
-              <span className="completed">✓</span>
-            </div>
-          </>
+        {task.type === 'TOKEN' && task.tokenAmount && (
+          <div className="requirement-item">
+            Купите минимум {task.tokenAmount} REBA
+            <span className="completed">✓</span>
+          </div>
         )}
       </div>
 
@@ -198,9 +190,14 @@ const TaskDetail: React.FC = () => {
       </button>
       {message && <div className="message">{message}</div>}
       <div className="debug-info">
+        <h3>Отладочная информация:</h3>
+        <p>Task ID: {task.id}</p>
+        <p>Task Type: {task.type}</p>
         <p>User ID: {user?.id}</p>
+        <p>Telegram ID: {user?.telegramId}</p>
         <p>Wallet Address: {user?.walletAddress || 'Не указан'}</p>
         <p>Is Subscribed: {isSubscribed ? 'Да' : 'Нет'}</p>
+        <p>Owns Token: {ownsToken ? 'Да' : 'Нет'}</p>
       </div>
     </div>
   );
