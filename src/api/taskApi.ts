@@ -101,3 +101,5 @@ getReferralCode: async (telegramId: string) => {
       throw error;
     }
   },
+
+};
