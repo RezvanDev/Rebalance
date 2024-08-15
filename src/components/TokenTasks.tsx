@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
-import api from '../utils/api';
-import "../styles/TokenTasks.css";
+import TaskCard from './TaskCard';
+import taskApi from '../api/taskApi';
+import '../styles/TokenTasks.css';
 
-interface TokenTask {
+interface Task {
   id: number;
   title: string;
   description: string;
@@ -17,6 +18,7 @@ interface TokenTask {
   maxParticipants: number;
   currentParticipants: number;
   completed: boolean;
+  type: 'CHANNEL' | 'TOKEN';
 }
 
 const TokenTasks: React.FC = () => {
@@ -24,8 +26,8 @@ const TokenTasks: React.FC = () => {
   const navigate = useNavigate();
   const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
-  const [tasks, setTasks] = useState<TokenTask[]>([]);
-  const [selectedTask, setSelectedTask] = useState<TokenTask | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,9 +36,9 @@ const TokenTasks: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const response = await api.get('/tasks', { params: { type: 'TOKEN' } });
-      if (response.data && Array.isArray(response.data.tasks)) {
-        setTasks(response.data.tasks);
+      const response = await taskApi.getTasks('TOKEN');
+      if (response.success && Array.isArray(response.tasks)) {
+        setTasks(response.tasks);
       } else {
         throw new Error('Неверный формат данных от сервера');
       }
@@ -68,17 +70,19 @@ const TokenTasks: React.FC = () => {
     };
   }, [tg, selectedTask]);
 
-  const handleTaskClick = (task: TokenTask) => {
-    setSelectedTask(task);
-    checkSubscription(task.channelUsername);
+  const handleTaskClick = (taskId: number) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setSelectedTask(task);
+      checkSubscription(task.channelUsername);
+    }
   };
 
   const checkSubscription = async (channelUsername: string) => {
+    if (!user) return;
     try {
-      const response = await api.get('/telegram/check-subscription', {
-        params: { telegramId: user?.id, channelUsername }
-      });
-      setIsSubscribed(response.data.isSubscribed);
+      const response = await taskApi.checkChannelSubscription(user.id, channelUsername);
+      setIsSubscribed(response.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
       setIsSubscribed(false);
@@ -88,6 +92,7 @@ const TokenTasks: React.FC = () => {
   const handleSubscribe = () => {
     if (selectedTask?.channelUsername) {
       window.open(`https://t.me/${selectedTask.channelUsername}`, '_blank');
+      setTimeout(() => checkSubscription(selectedTask.channelUsername), 3000);
     }
   };
 
@@ -95,14 +100,16 @@ const TokenTasks: React.FC = () => {
     if (!selectedTask || !user) return;
 
     try {
+      await checkSubscription(selectedTask.channelUsername);
+
       if (!isSubscribed) {
         setMessage('Пожалуйста, подпишитесь на канал перед выполнением задания');
         return;
       }
 
-      const completeResponse = await api.post(`/tasks/${selectedTask.id}/complete`, { telegramId: user.id });
+      const completeResponse = await taskApi.completeTask(selectedTask.id, user.id);
 
-      if (completeResponse.data.success) {
+      if (completeResponse.success) {
         const rewardAmount = Number(selectedTask.reward.split(' ')[0]);
         await fetchBalance();
         
@@ -119,7 +126,7 @@ const TokenTasks: React.FC = () => {
         setSelectedTask({ ...selectedTask, completed: true });
         setTimeout(() => setSelectedTask(null), 3000);
       } else {
-        setMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания');
+        setMessage(completeResponse.error || 'Произошла ошибка при выполнении задания');
       }
     } catch (error: any) {
       console.error('Error completing task:', error);
@@ -178,22 +185,11 @@ const TokenTasks: React.FC = () => {
       {tasks.length > 0 ? (
         <div className="token-list">
           {tasks.map((task) => (
-            <div
+            <TaskCard
               key={task.id}
-              className={`token-item ${task.completed ? 'completed' : ''}`}
-              onClick={() => handleTaskClick(task)}
-            >
-              <div className="token-icon">₭</div>
-              <div className="token-info">
-                <span className="token-name">{task.title}</span>
-                <span className="token-reward">{task.reward}</span>
-              </div>
-              {task.completed ? (
-                <span className="completed-icon">✓</span>
-              ) : (
-                <span className="arrow-icon">›</span>
-              )}
-            </div>
+              task={task}
+              onClick={handleTaskClick}
+            />
           ))}
         </div>
       ) : (
