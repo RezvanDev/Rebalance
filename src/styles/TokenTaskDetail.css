@@ -9,19 +9,19 @@
   margin-bottom: 20px;
 }
 
-.description {
+.task-description {
   color: #666;
   margin-bottom: 20px;
 }
 
-.task-info {
+.info-card {
   background-color: #f5f5f5;
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 20px;
 }
 
-.reward, .token-amount, .progress {
+.reward, .progress {
   margin: 5px 0;
 }
 
@@ -30,34 +30,26 @@
   font-weight: bold;
 }
 
-.task-requirements {
-  margin-bottom: 20px;
-}
-
-.task-requirements ul {
-  list-style-type: none;
-  padding-left: 0;
-}
-
-.task-requirements li {
+.task-step {
   margin: 10px 0;
   padding-left: 25px;
   position: relative;
+  cursor: pointer;
 }
 
-.task-requirements li::before {
-  content: '✗';
+.task-step .arrow {
   color: #f44336;
   position: absolute;
   left: 0;
 }
 
-.task-requirements li.completed::before {
-  content: '✓';
+.task-step .completed {
   color: #4caf50;
+  position: absolute;
+  left: 0;
 }
 
-.complete-button {
+.check-completion-button {
   background-color: #2196f3;
   color: white;
   border: none;
@@ -68,11 +60,11 @@
   transition: background-color 0.3s ease;
 }
 
-.complete-button:hover:not(:disabled) {
+.check-completion-button:hover:not(:disabled) {
   background-color: #1976d2;
 }
 
-.complete-button:disabled {
+.check-completion-button:disabled {
   background-color: #bdbdbd;
   cursor: not-allowed;
 }
