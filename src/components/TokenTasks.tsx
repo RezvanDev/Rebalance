@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import api from '../utils/api';
-import TokenTaskCard from '../card/TokenTaskCard';  // Импортируем компонент TokenTaskCard
+import TokenTaskCard from '../card/TokenTaskCard';
 import '../styles/TokenTasks.css';
 
 interface TokenTask {

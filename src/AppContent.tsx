@@ -6,10 +6,9 @@ import MainMenu from './components/MainMenu';
 import TasksPage from './components/TasksPage';
 import RebaAcademy from './components/RebaAcademy';
 import ChannelTasks from './components/ChannelTasks';
-import TokenTasks from './components/TokenTasks'; 
+import TokenTasks from './components/TokenTasks';
 import NavigationBar from './components/NavigationBar';
 import TokenTaskDetail from './components/TokenTaskDetail';
-
 
 const AppContent: React.FC = () => {
   const { connected } = useTonConnect();
@@ -30,7 +29,6 @@ const AppContent: React.FC = () => {
           <Route path="/reba-academy" element={<RebaAcademy />} />
           <Route path="/channel-tasks" element={<ChannelTasks />} />
           <Route path="/token-tasks" element={<TokenTasks />} />
-          <Route path="/token-task/:tokenId" element={<TokenTaskDetail />} />
           <Route path="/token-task/:taskId" element={<TokenTaskDetail />} />
         </Routes>
       </div>
