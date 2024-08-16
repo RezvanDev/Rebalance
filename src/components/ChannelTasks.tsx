@@ -4,7 +4,7 @@ import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import UniversalTaskCard from './UniversalTaskCard';
 import { useTransactions } from '../hooks/useTransactions';
-import api from '../utils/api';
+import { taskApi } from '../api/taskApi';
 import "../styles/ChannelTasks.css";
 
 interface Task {
@@ -30,10 +30,10 @@ const ChannelTasks: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const response = await api.get('/tasks', { params: { type: 'CHANNEL' } });
-      if (response.data && Array.isArray(response.data.tasks)) {
+      const response = await taskApi.getTasks('CHANNEL');
+      if (response && Array.isArray(response.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
-        const channelTasks = response.data.tasks.map((task: any) => ({
+        const channelTasks = response.tasks.map((task: any) => ({
           id: task.id,
           title: task.title,
           reward: `${task.reward} LIBRA`,
@@ -79,9 +79,9 @@ const ChannelTasks: React.FC = () => {
     const task = tasks.find(t => t.id === id);
     if (task && user && !task.completed) {
       try {
-        const completeResponse = await api.post(`/tasks/${id}/complete`, { telegramId: user.id });
+        const completeResponse = await taskApi.completeTask(id, user.id);
 
-        if (completeResponse.data.success) {
+        if (completeResponse.success) {
           const rewardAmount = parseInt(task.reward.split(' ')[0]);
           
           await fetchBalance();
@@ -104,7 +104,7 @@ const ChannelTasks: React.FC = () => {
           completedTasks.push(id);
           localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
         } else {
-          showMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания.');
+          showMessage(completeResponse.error || 'Произошла ошибка при выполнении задания.');
         }
       } catch (error: any) {
         console.error('Error completing channel task:', error);
