@@ -2,18 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
-import ChannelTaskCard from '../card/ChannelTaskCard';
+import UniversalTaskCard from './UniversalTaskCard';
 import { useTransactions } from '../hooks/useTransactions';
 import api from '../utils/api';
 import "../styles/ChannelTasks.css";
 
-interface Channel {
+interface Task {
   id: number;
-  name: string;
+  title: string;
   reward: string;
   completed: boolean;
-  link: string;
-  channelLink: string;
+  channelUsername: string;
+  type: 'CHANNEL';
 }
 
 const ChannelTasks: React.FC = () => {
@@ -21,7 +21,7 @@ const ChannelTasks: React.FC = () => {
   const navigate = useNavigate();
   const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
-  const [channels, setChannels] = useState<Channel[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,13 +35,13 @@ const ChannelTasks: React.FC = () => {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
         const channelTasks = response.data.tasks.map((task: any) => ({
           id: task.id,
-          name: task.title,
+          title: task.title,
           reward: `${task.reward} LIBRA`,
           completed: completedTasks.includes(task.id),
-          link: `/channel/${task.id}`,
-          channelLink: task.channelUsername ? `https://t.me/${task.channelUsername}` : ''
+          channelUsername: task.channelUsername,
+          type: 'CHANNEL' as const
         }));
-        setChannels(channelTasks);
+        setTasks(channelTasks);
         setError(null);
       } else {
         throw new Error('Неверный формат данных от сервера');
@@ -76,27 +76,27 @@ const ChannelTasks: React.FC = () => {
   };
 
   const handleSubscribe = async (id: number) => {
-    const channel = channels.find(c => c.id === id);
-    if (channel && user && !channel.completed) {
+    const task = tasks.find(t => t.id === id);
+    if (task && user && !task.completed) {
       try {
         const completeResponse = await api.post(`/tasks/${id}/complete`, { telegramId: user.id });
 
         if (completeResponse.data.success) {
-          const rewardAmount = parseInt(channel.reward.split(' ')[0]);
+          const rewardAmount = parseInt(task.reward.split(' ')[0]);
           
           await fetchBalance();
           
           addTransaction({
             type: 'Получение',
             amount: `${rewardAmount} LIBRA`,
-            description: `Подписка на канал ${channel.name}`
+            description: `Подписка на канал ${task.title}`
           });
 
-          showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
+          showMessage(`Вы получили ${task.reward} за подписку на ${task.title}!`);
           
-          setChannels(prevChannels => 
-            prevChannels.map(c => 
-              c.id === id ? { ...c, completed: true } : c
+          setTasks(prevTasks => 
+            prevTasks.map(t => 
+              t.id === id ? { ...t, completed: true } : t
             )
           );
           
@@ -135,12 +135,12 @@ const ChannelTasks: React.FC = () => {
         <p>Текущий баланс: {balance} LIBRA</p>
         <button className="refresh-button" onClick={handleRefresh}>↻</button>
       </div>
-      {channels.length > 0 ? (
+      {tasks.length > 0 ? (
         <div className="channel-list">
-          {channels.map((channel) => (
-            <ChannelTaskCard
-              key={channel.id}
-              {...channel}
+          {tasks.map((task) => (
+            <UniversalTaskCard
+              key={task.id}
+              {...task}
               onSubscribe={handleSubscribe}
             />
           ))}

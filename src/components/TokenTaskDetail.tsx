@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import axios from 'axios';
 import { BASE_URL } from '../constants/baseUrl';
+import UniversalTaskCard from './UniversalTaskCard';
 import '../styles/TokenTaskDetail.css';
 
 interface Task {
@@ -16,6 +17,7 @@ interface Task {
   tokenAmount?: number;
   maxParticipants?: number;
   currentParticipants?: number;
+  type: 'TOKEN';
 }
 
 const TokenTaskDetail: React.FC = () => {
@@ -118,22 +120,27 @@ const TokenTaskDetail: React.FC = () => {
 
   return (
     <div className="token-task-detail">
-      <h1>{task.title}</h1>
-      <p className="description">{task.description}</p>
-      <div className="task-info">
-        <p className="reward">Награда: {task.reward}</p>
-        <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>
-        <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
+      <UniversalTaskCard
+        {...task}
+        onSubscribe={() => {}} // Для токен-заданий подписка не требуется
+      />
+      <div className="task-description">
+        <h2>Описание задания</h2>
+        <p>{task.description}</p>
       </div>
       <div className="task-requirements">
-        <p>Требования:</p>
+        <h2>Требования</h2>
         <ul>
-          <li className={isSubscribed ? 'completed' : ''}>
-            Подписаться на канал @{task.channelUsername}
-          </li>
-          <li className={ownsToken ? 'completed' : ''}>
-            Иметь {task.tokenAmount} токенов на балансе
-          </li>
+          {task.channelUsername && (
+            <li className={isSubscribed ? 'completed' : ''}>
+              Подписаться на канал @{task.channelUsername}
+            </li>
+          )}
+          {task.tokenAmount && (
+            <li className={ownsToken ? 'completed' : ''}>
+              Иметь {task.tokenAmount} токенов на балансе
+            </li>
+          )}
         </ul>
       </div>
       <button 
