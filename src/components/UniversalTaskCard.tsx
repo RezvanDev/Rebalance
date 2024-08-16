@@ -1,66 +1,80 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../styles/UniversalTaskCard.css';
 
-interface TaskCardProps {
+interface UniversalTaskCardProps {
   id: number;
+  type: 'CHANNEL' | 'TOKEN';
   title: string;
   reward: string;
   completed: boolean;
-  type: 'CHANNEL' | 'TOKEN';
   channelUsername?: string;
+  channelLink?: string;
   tokenAddress?: string;
   tokenAmount?: number;
-  maxParticipants?: number;
-  currentParticipants?: number;
   onSubscribe?: (id: number) => void;
+  onClick?: (taskId: number) => void;
 }
 
-const UniversalTaskCard: React.FC<TaskCardProps> = ({
+const UniversalTaskCard: React.FC<UniversalTaskCardProps> = ({
   id,
+  type,
   title,
   reward,
   completed,
-  type,
   channelUsername,
+  channelLink,
   tokenAddress,
   tokenAmount,
-  maxParticipants,
-  currentParticipants,
-  onSubscribe
+  onSubscribe,
+  onClick
 }) => {
-  const renderTaskSpecificInfo = () => {
-    if (type === 'CHANNEL') {
-      return (
-        <div className="channel-info">
-          <p>Канал: @{channelUsername}</p>
-        </div>
-      );
-    } else if (type === 'TOKEN') {
-      return (
-        <div className="token-info">
-          <p>Требуемые токены: {tokenAmount}</p>
-          <p>Прогресс: {currentParticipants}/{maxParticipants}</p>
-        </div>
-      );
+  const navigate = useNavigate();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (type === 'CHANNEL' && !completed && channelLink) {
+      window.open(channelLink, '_blank');
+    } else if (type === 'TOKEN' && onClick) {
+      onClick(id);
+    }
+  };
+
+  const handleSubscribe = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (type === 'CHANNEL' && !completed && onSubscribe) {
+      onSubscribe(id);
     }
   };
 
   return (
-    <div className={`universal-task-card ${completed ? 'completed' : ''}`}>
-      <h3>{title}</h3>
-      <p className="reward">Награда: {reward}</p>
-      {renderTaskSpecificInfo()}
-      <div className="card-actions">
-        {type === 'CHANNEL' && !completed && (
-          <button onClick={() => onSubscribe && onSubscribe(id)} className="subscribe-button">
-            Подписаться
-          </button>
-        )}
-        <Link to={`/task/${type.toLowerCase()}/${id}`} className="details-link">
-          Подробнее
-        </Link>
+    <div
+      onClick={handleClick}
+      className={`universal-task-card ${completed ? 'completed' : ''} ${type.toLowerCase()}-task`}
+    >
+      <div className="task-icon">
+        {type === 'CHANNEL' ? '📢' : '₭'}
       </div>
+      <div className="task-info">
+        <span className="task-name">{title}</span>
+        <span className="task-reward">{reward}</span>
+      </div>
+      {type === 'CHANNEL' && (
+        completed ? (
+          <span className="completed-icon">✓</span>
+        ) : (
+          <button onClick={handleSubscribe} className="subscribe-button">
+            Подтвердить
+          </button>
+        )
+      )}
+      {type === 'TOKEN' && (
+        completed ? (
+          <span className="completed-icon">✓</span>
+        ) : (
+          <span className="arrow-icon">›</span>
+        )
+      )}
     </div>
   );
 };
