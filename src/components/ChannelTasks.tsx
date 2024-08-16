@@ -2,18 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
-import UniversalTaskCard from './UniversalTaskCard';
+import ChannelTaskCard from '../card/ChannelTaskCard';
 import { useTransactions } from '../hooks/useTransactions';
-import { taskApi } from '../api/taskApi';
+import api from '../utils/api';
 import "../styles/ChannelTasks.css";
 
-interface Task {
+interface Channel {
   id: number;
-  title: string;
+  name: string;
   reward: string;
   completed: boolean;
-  channelUsername: string;
-  type: 'CHANNEL';
+  link: string;
+  channelLink: string;
 }
 
 const ChannelTasks: React.FC = () => {
@@ -21,7 +21,7 @@ const ChannelTasks: React.FC = () => {
   const navigate = useNavigate();
   const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,18 +30,18 @@ const ChannelTasks: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const response = await taskApi.getTasks('CHANNEL');
-      if (response && Array.isArray(response.tasks)) {
+      const response = await api.get('/tasks', { params: { type: 'CHANNEL' } });
+      if (response.data && Array.isArray(response.data.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
-        const channelTasks = response.tasks.map((task: any) => ({
+        const channelTasks = response.data.tasks.map((task: any) => ({
           id: task.id,
-          title: task.title,
+          name: task.title,
           reward: `${task.reward} LIBRA`,
           completed: completedTasks.includes(task.id),
-          channelUsername: task.channelUsername,
-          type: 'CHANNEL' as const
+          link: `/channel/${task.id}`,
+          channelLink: task.channelUsername ? `https://t.me/${task.channelUsername}` : ''
         }));
-        setTasks(channelTasks);
+        setChannels(channelTasks);
         setError(null);
       } else {
         throw new Error('Неверный формат данных от сервера');
@@ -76,27 +76,27 @@ const ChannelTasks: React.FC = () => {
   };
 
   const handleSubscribe = async (id: number) => {
-    const task = tasks.find(t => t.id === id);
-    if (task && user && !task.completed) {
+    const channel = channels.find(c => c.id === id);
+    if (channel && user && !channel.completed) {
       try {
-        const completeResponse = await taskApi.completeTask(id, user.id);
+        const completeResponse = await api.post(`/tasks/${id}/complete`, { telegramId: user.id });
 
-        if (completeResponse.success) {
-          const rewardAmount = parseInt(task.reward.split(' ')[0]);
+        if (completeResponse.data.success) {
+          const rewardAmount = parseInt(channel.reward.split(' ')[0]);
           
           await fetchBalance();
           
           addTransaction({
             type: 'Получение',
             amount: `${rewardAmount} LIBRA`,
-            description: `Подписка на канал ${task.title}`
+            description: `Подписка на канал ${channel.name}`
           });
 
-          showMessage(`Вы получили ${task.reward} за подписку на ${task.title}!`);
+          showMessage(`Вы получили ${channel.reward} за подписку на ${channel.name}!`);
           
-          setTasks(prevTasks => 
-            prevTasks.map(t => 
-              t.id === id ? { ...t, completed: true } : t
+          setChannels(prevChannels => 
+            prevChannels.map(c => 
+              c.id === id ? { ...c, completed: true } : c
             )
           );
           
@@ -104,7 +104,7 @@ const ChannelTasks: React.FC = () => {
           completedTasks.push(id);
           localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
         } else {
-          showMessage(completeResponse.error || 'Произошла ошибка при выполнении задания.');
+          showMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания.');
         }
       } catch (error: any) {
         console.error('Error completing channel task:', error);
@@ -135,12 +135,12 @@ const ChannelTasks: React.FC = () => {
         <p>Текущий баланс: {balance} LIBRA</p>
         <button className="refresh-button" onClick={handleRefresh}>↻</button>
       </div>
-      {tasks.length > 0 ? (
+      {channels.length > 0 ? (
         <div className="channel-list">
-          {tasks.map((task) => (
-            <UniversalTaskCard
-              key={task.id}
-              {...task}
+          {channels.map((channel) => (
+            <ChannelTaskCard
+              key={channel.id}
+              {...channel}
               onSubscribe={handleSubscribe}
             />
           ))}
