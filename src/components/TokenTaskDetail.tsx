@@ -30,17 +30,25 @@ const TokenTaskDetail: React.FC = () => {
   const [ownsToken, setOwnsToken] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchTask = useCallback(async () => {
     if (!taskId) return;
     try {
       setLoading(true);
+      setError(null);
+      console.log(`Fetching task details for taskId: ${taskId}`);
       const response = await api.get(`/tasks/${taskId}`);
-      setTask(response.data.task);
-      await checkRequirements(response.data.task);
-    } catch (error) {
+      console.log('Task details response:', response.data);
+      if (response.data && response.data.task) {
+        setTask(response.data.task);
+        await checkRequirements(response.data.task);
+      } else {
+        throw new Error('Неверный формат данных от сервера');
+      }
+    } catch (error: any) {
       console.error('Error fetching task:', error);
-      setMessage('Ошибка при загрузке задания');
+      setError(error.response?.data?.error || error.message || 'Ошибка при загрузке задания');
     } finally {
       setLoading(false);
     }
@@ -68,7 +76,6 @@ const TokenTaskDetail: React.FC = () => {
       setIsSubscribed(subscribed);
     }
     if (task.tokenAmount) {
-      // Заглушка для проверки токенов
       const hasTokens = await checkTokenOwnership(task.tokenAmount);
       setOwnsToken(hasTokens);
     }
@@ -125,7 +132,16 @@ const TokenTaskDetail: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="loading">Загрузка...</div>;
+    return <div className="loading">Загрузка деталей задания...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <p className="error-message">{error}</p>
+        <button className="retry-button" onClick={fetchTask}>Попробовать снова</button>
+      </div>
+    );
   }
 
   if (!task) {
