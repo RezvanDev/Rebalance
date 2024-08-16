@@ -34,17 +34,11 @@ const TokenTaskDetail: React.FC = () => {
     if (!user || !tokenId) return;
     try {
       setLoading(true);
-      console.log(`Fetching task with ID: ${tokenId}`);
-      const response = await taskApi.getTasks('TOKEN');
-      console.log('Tasks response:', response);
-      const task = response.tasks.find((t: Task) => t.id === Number(tokenId));
-      if (task) {
-        console.log('Found task:', task);
-        setTask(task);
+      const response = await taskApi.getTask(Number(tokenId));
+      if (response.task) {
+        setTask(response.task);
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
-        console.log('Completed tasks from localStorage:', completedTasks);
         if (completedTasks.includes(Number(tokenId))) {
-          console.log(`Task ${tokenId} is marked as completed in localStorage`);
           setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
         }
       } else {
@@ -77,9 +71,7 @@ const TokenTaskDetail: React.FC = () => {
   const checkSubscription = useCallback(async () => {
     if (!task || !user) return;
     try {
-      console.log(`Checking subscription for user ${user.id} to channel ${task.channelUsername}`);
       const response = await taskApi.checkChannelSubscription(user.id.toString(), task.channelUsername);
-      console.log('Subscription check response:', response);
       setIsSubscribed(response.isSubscribed);
     } catch (error) {
       console.error('Error checking channel subscription:', error);
@@ -111,9 +103,7 @@ const TokenTaskDetail: React.FC = () => {
         return;
       }
 
-      console.log(`Attempting to complete task ${task.id} for user ${user.id}`);
       const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
-      console.log('Complete task response:', completeResponse);
 
       if (completeResponse.success) {
         const rewardAmount = Number(task.reward.split(' ')[0]);
@@ -126,12 +116,13 @@ const TokenTaskDetail: React.FC = () => {
         });
 
         setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
-        setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
+        
+        // Обновляем задание, запрашивая актуальные данные с сервера
+        await fetchTask();
         
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
         completedTasks.push(task.id);
         localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
-        console.log(`Updated completed tasks in localStorage:`, completedTasks);
         
         setTimeout(() => navigate('/token-tasks'), 3000);
       } else {

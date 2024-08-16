@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import TokenTaskCard from '../card/TokenTaskCard';
-import api from '../utils/api';
+import { taskApi } from '../api/taskApi';
 import "../styles/TokenTasks.css";
 
 interface TokenTask {
@@ -12,7 +12,7 @@ interface TokenTask {
   reward: string;
   tokenAmount: number;
   completed: boolean;
-  channelUsername: string; // Добавлено поле channelUsername
+  channelUsername: string;
 }
 
 const TokenTasks: React.FC = () => {
@@ -27,16 +27,16 @@ const TokenTasks: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const response = await api.get('/tasks', { params: { type: 'TOKEN' } });
-      if (response.data && Array.isArray(response.data.tasks)) {
+      const response = await taskApi.getTasks('TOKEN');
+      if (response && Array.isArray(response.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
-        const tokenTasks = response.data.tasks.map((task: any) => ({
+        const tokenTasks = response.tasks.map((task: any) => ({
           id: task.id,
           title: task.title,
           reward: `${task.reward} LIBRA`,
           tokenAmount: task.tokenAmount,
           completed: completedTasks.includes(task.id),
-          channelUsername: task.channelUsername // Добавлено поле channelUsername
+          channelUsername: task.channelUsername
         }));
         setTasks(tokenTasks);
         setError(null);
