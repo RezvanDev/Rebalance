@@ -4,6 +4,7 @@ import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
 import { taskApi } from '../api/taskApi';
+import api from '../utils/api';
 import '../styles/TokenTaskDetail.css';
 
 interface Task {
@@ -75,19 +76,24 @@ const TokenTaskDetail: React.FC = () => {
     if (task.channelUsername && user) {
       const subscribed = await checkChannelSubscription(task.channelUsername);
       setIsSubscribed(subscribed);
+    } else {
+      setIsSubscribed(false);
     }
-    if (task.tokenAmount) {
+    if (task.tokenAmount && user) {
       const hasTokens = await checkTokenOwnership(task.tokenAmount);
       setOwnsToken(hasTokens);
+    } else {
+      setOwnsToken(false);
     }
   };
 
   const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
     if (!user) return false;
     try {
-      // Здесь должен быть запрос к API для проверки подписки на канал
-      // Пока что используем заглушку
-      return true;
+      const response = await api.get('/telegram/check-subscription', {
+        params: { telegramId: user.id, channelUsername }
+      });
+      return response.data.isSubscribed;
     } catch (error) {
       console.error('Error checking channel subscription:', error);
       return false;
@@ -103,6 +109,14 @@ const TokenTaskDetail: React.FC = () => {
     if (!task || !user) return;
 
     try {
+      // Перепроверяем требования перед выполнением задания
+      await checkRequirements(task);
+      
+      if (!isSubscribed || !ownsToken) {
+        setMessage('Пожалуйста, убедитесь, что вы выполнили все требования задания.');
+        return;
+      }
+
       const response = await taskApi.completeTask(task.id, user.id.toString());
 
       if (response.success) {
@@ -162,12 +176,12 @@ const TokenTaskDetail: React.FC = () => {
         <ul>
           {task.channelUsername && (
             <li className={isSubscribed ? 'completed' : ''}>
-              Подписаться на канал @{task.channelUsername}
+              {isSubscribed ? '✓ ' : ''}Подписаться на канал @{task.channelUsername}
             </li>
           )}
           {task.tokenAmount && (
             <li className={ownsToken ? 'completed' : ''}>
-              Иметь {task.tokenAmount} токенов на балансе
+              {ownsToken ? '✓ ' : ''}Иметь {task.tokenAmount} токенов на балансе
             </li>
           )}
         </ul>
