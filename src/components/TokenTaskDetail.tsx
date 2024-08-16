@@ -57,9 +57,28 @@ const TokenTaskDetail: React.FC = () => {
     }
   }, [user, tokenId]);
 
+  const checkSubscription = useCallback(async () => {
+    if (!task || !user) return;
+    try {
+      const response = await taskApi.checkChannelSubscription(user.id.toString(), task.channelUsername);
+      console.log('Subscription check response:', response);
+      setIsSubscribed(response.isSubscribed);
+    } catch (error) {
+      console.error('Error checking channel subscription:', error);
+      setIsSubscribed(false);
+      setMessage('Ошибка при проверке подписки на канал. Пожалуйста, попробуйте позже.');
+    }
+  }, [task, user]);
+
   useEffect(() => {
     fetchTask();
   }, [fetchTask]);
+
+  useEffect(() => {
+    if (task && user) {
+      checkSubscription();
+    }
+  }, [task, user, checkSubscription]);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -72,23 +91,6 @@ const TokenTaskDetail: React.FC = () => {
       }
     };
   }, [tg, navigate]);
-
-  const checkSubscription = useCallback(async () => {
-    if (!task || !user) return;
-    try {
-      const response = await taskApi.checkChannelSubscription(user.id.toString(), task.channelUsername);
-      setIsSubscribed(response.isSubscribed);
-    } catch (error) {
-      console.error('Error checking channel subscription:', error);
-      setIsSubscribed(false);
-    }
-  }, [task, user]);
-
-  useEffect(() => {
-    if (task && user) {
-      checkSubscription();
-    }
-  }, [task, user, checkSubscription]);
 
   const handleSubscribe = () => {
     if (task?.channelUsername) {
@@ -109,6 +111,7 @@ const TokenTaskDetail: React.FC = () => {
       }
 
       const completeResponse = await taskApi.completeTokenTask(task.id, user.id.toString());
+      console.log('Complete task response:', completeResponse);
 
       if (completeResponse.success) {
         const rewardAmount = Number(task.reward.split(' ')[0]);
@@ -128,13 +131,15 @@ const TokenTaskDetail: React.FC = () => {
         completedTasks.push(task.id);
         localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
         
+        setIsSubscribed(true);
+
         setTimeout(() => navigate('/token-tasks'), 3000);
       } else {
         setMessage(completeResponse.error || 'Произошла ошибка при выполнении задания');
       }
     } catch (error: any) {
       console.error('Error completing task:', error);
-      setMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания');
+      setMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания. Пожалуйста, попробуйте позже.');
     }
   };
 
@@ -148,7 +153,12 @@ const TokenTaskDetail: React.FC = () => {
   }
 
   if (!task) {
-    return <div className="error">Задание не найдено. <button onClick={() => navigate('/token-tasks')}>Вернуться к списку заданий</button></div>;
+    return (
+      <div className="error">
+        Задание не найдено. 
+        <button onClick={() => navigate('/token-tasks')}>Вернуться к списку заданий</button>
+      </div>
+    );
   }
 
   return (
