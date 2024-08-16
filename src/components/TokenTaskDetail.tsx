@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
@@ -27,23 +27,24 @@ const TokenTaskDetail: React.FC = () => {
   const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
   const [task, setTask] = useState<Task | null>(null);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [hasEnoughTokens, setHasEnoughTokens] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTask = useCallback(async () => {
-    if (!taskId) return;
+    if (!taskId || !user) return;
     try {
       setLoading(true);
       const response = await taskApi.getTasks('TOKEN');
       if (response && Array.isArray(response.tasks)) {
         const foundTask = response.tasks.find((t: Task) => t.id === Number(taskId));
         if (foundTask) {
-          setTask(foundTask);
+          const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
+          setTask({
+            ...foundTask,
+            completed: completedTasks.includes(foundTask.id)
+          });
           setError(null);
-          // Не проверяем требования автоматически, пользователь сделает это сам
         } else {
           throw new Error('Задание не найдено');
         }
@@ -56,30 +57,7 @@ const TokenTaskDetail: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [taskId]);
-
-  const checkChannelSubscription = async () => {
-    if (!task?.channelUsername || !user) return;
-    try {
-      setLoading(true);
-      const response = await api.get('/telegram/check-subscription', {
-        params: { telegramId: user.id, channelUsername: task.channelUsername }
-      });
-      setIsSubscribed(response.data.isSubscribed);
-      setMessage(response.data.isSubscribed ? 'Вы подписаны на канал!' : 'Вы не подписаны на канал. Пожалуйста, подпишитесь и проверьте снова.');
-    } catch (error) {
-      console.error('Error checking channel subscription:', error);
-      setMessage('Ошибка при проверке подписки на канал');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkTokenBalance = async () => {
-    // Заглушка для проверки токенов
-    setHasEnoughTokens(true);
-    setMessage('У вас достаточно токенов для выполнения задания');
-  };
+  }, [taskId, user]);
 
   useEffect(() => {
     fetchTask();
@@ -97,12 +75,17 @@ const TokenTaskDetail: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const handleCompleteTask = async () => {
-    if (!task || !user) return;
-    try {
-      const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
+  const showMessage = (msg: string) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(null), 3000);
+  };
 
-      if (completeResponse.success) {
+  const handleCompleteTask = async () => {
+    if (!task || !user || task.completed) return;
+    try {
+      const completeResponse = await api.post(`/tasks/${task.id}/complete`, { telegramId: user.id });
+
+      if (completeResponse.data.success) {
         const rewardAmount = typeof task.reward === 'string' ? parseInt(task.reward) : task.reward;
         
         await fetchBalance();
@@ -113,14 +96,19 @@ const TokenTaskDetail: React.FC = () => {
           description: `Выполнение задания: ${task.title}`
         });
 
-        setMessage(`Поздравляем! Вы выполнили задание и получили ${rewardAmount} LIBRA!`);
+        showMessage(`Вы получили ${rewardAmount} LIBRA за выполнение задания!`);
+        
         setTask({ ...task, completed: true });
+        
+        const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
+        completedTasks.push(task.id);
+        localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
       } else {
-        setMessage(completeResponse.error || 'Произошла ошибка при выполнении задания.');
+        showMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания.');
       }
     } catch (error: any) {
       console.error('Error completing task:', error);
-      setMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
+      showMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
     }
   };
 
@@ -144,25 +132,20 @@ const TokenTaskDetail: React.FC = () => {
       <div className="task-info">
         <p className="reward">Награда: {task.reward} LIBRA</p>
         {task.tokenAmount && <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>}
+        {task.channelUsername && <p className="channel">Требуется подписка на канал: @{task.channelUsername}</p>}
         <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
       </div>
       <div className="task-requirements">
         <p>Требования:</p>
         <ul>
           {task.channelUsername && (
-            <li className={isSubscribed ? 'completed' : ''}>
-              {isSubscribed ? '✓ ' : ''}Подписаться на канал @{task.channelUsername}
-              <button onClick={checkChannelSubscription} className="check-button">
-                Проверить подписку
-              </button>
+            <li>
+              Подписаться на канал @{task.channelUsername}
             </li>
           )}
           {task.tokenAmount && (
-            <li className={hasEnoughTokens ? 'completed' : ''}>
-              {hasEnoughTokens ? '✓ ' : ''}Иметь {task.tokenAmount} токенов на балансе
-              <button onClick={checkTokenBalance} className="check-button">
-                Проверить баланс
-              </button>
+            <li>
+              Иметь {task.tokenAmount} токенов на балансе
             </li>
           )}
         </ul>
@@ -170,7 +153,7 @@ const TokenTaskDetail: React.FC = () => {
       <button 
         className="complete-button"
         onClick={handleCompleteTask} 
-        disabled={!isSubscribed || !hasEnoughTokens || task.completed}
+        disabled={task.completed}
       >
         {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
       </button>
