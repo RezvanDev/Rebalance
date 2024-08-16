@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
-import api from '../utils/api';
+import { taskApi } from '../api/taskApi';
 import '../styles/TokenTaskDetail.css';
 
 interface Task {
@@ -34,16 +34,21 @@ const TokenTaskDetail: React.FC = () => {
     if (!taskId) return;
     try {
       setLoading(true);
-      const response = await api.get(`/tasks/${taskId}`);
-      if (response.data && response.data.task) {
-        setTask(response.data.task);
-        setError(null);
+      const response = await taskApi.getTasks('TOKEN');
+      if (response && Array.isArray(response.tasks)) {
+        const foundTask = response.tasks.find((t: Task) => t.id === Number(taskId));
+        if (foundTask) {
+          setTask(foundTask);
+          setError(null);
+        } else {
+          throw new Error('Задание не найдено');
+        }
       } else {
         throw new Error('Неверный формат данных от сервера');
       }
     } catch (err: any) {
       console.error('Error fetching task:', err);
-      setError(err.response?.data?.error || 'Ошибка при загрузке задания');
+      setError(err.message || 'Ошибка при загрузке задания');
     } finally {
       setLoading(false);
     }
@@ -73,9 +78,9 @@ const TokenTaskDetail: React.FC = () => {
   const handleCompleteTask = async () => {
     if (!task || !user) return;
     try {
-      const completeResponse = await api.post(`/tasks/${task.id}/complete`, { telegramId: user.id });
+      const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
 
-      if (completeResponse.data.success) {
+      if (completeResponse.success) {
         const rewardAmount = parseInt(task.reward.split(' ')[0]);
         
         await fetchBalance();
@@ -94,7 +99,7 @@ const TokenTaskDetail: React.FC = () => {
         completedTasks.push(task.id);
         localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
       } else {
-        showMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания.');
+        showMessage(completeResponse.error || 'Произошла ошибка при выполнении задания.');
       }
     } catch (error: any) {
       console.error('Error completing task:', error);
