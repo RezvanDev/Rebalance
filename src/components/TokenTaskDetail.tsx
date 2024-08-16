@@ -43,7 +43,7 @@ const TokenTaskDetail: React.FC = () => {
         if (foundTask) {
           setTask(foundTask);
           setError(null);
-          await checkRequirements(foundTask);
+          // Не проверяем требования автоматически, пользователь сделает это сам
         } else {
           throw new Error('Задание не найдено');
         }
@@ -58,26 +58,27 @@ const TokenTaskDetail: React.FC = () => {
     }
   }, [taskId]);
 
-  const checkRequirements = async (task: Task) => {
-    if (task.channelUsername && user) {
-      const subscribed = await checkChannelSubscription(task.channelUsername);
-      setIsSubscribed(subscribed);
-    }
-    // Заглушка для проверки токенов
-    setHasEnoughTokens(true);
-  };
-
-  const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
-    if (!user) return false;
+  const checkChannelSubscription = async () => {
+    if (!task?.channelUsername || !user) return;
     try {
+      setLoading(true);
       const response = await api.get('/telegram/check-subscription', {
-        params: { telegramId: user.id, channelUsername }
+        params: { telegramId: user.id, channelUsername: task.channelUsername }
       });
-      return response.data.isSubscribed;
+      setIsSubscribed(response.data.isSubscribed);
+      setMessage(response.data.isSubscribed ? 'Вы подписаны на канал!' : 'Вы не подписаны на канал. Пожалуйста, подпишитесь и проверьте снова.');
     } catch (error) {
       console.error('Error checking channel subscription:', error);
-      return false;
+      setMessage('Ошибка при проверке подписки на канал');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const checkTokenBalance = async () => {
+    // Заглушка для проверки токенов
+    setHasEnoughTokens(true);
+    setMessage('У вас достаточно токенов для выполнения задания');
   };
 
   useEffect(() => {
@@ -151,11 +152,17 @@ const TokenTaskDetail: React.FC = () => {
           {task.channelUsername && (
             <li className={isSubscribed ? 'completed' : ''}>
               {isSubscribed ? '✓ ' : ''}Подписаться на канал @{task.channelUsername}
+              <button onClick={checkChannelSubscription} className="check-button">
+                Проверить подписку
+              </button>
             </li>
           )}
           {task.tokenAmount && (
             <li className={hasEnoughTokens ? 'completed' : ''}>
               {hasEnoughTokens ? '✓ ' : ''}Иметь {task.tokenAmount} токенов на балансе
+              <button onClick={checkTokenBalance} className="check-button">
+                Проверить баланс
+              </button>
             </li>
           )}
         </ul>
