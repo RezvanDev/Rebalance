@@ -105,11 +105,16 @@
   cursor: pointer;
 }
 
-.check-button:hover {
-  background-color: #45a049;
+.check-button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.check-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
+.check-button:hover {
+  background-color: #45a049;
 }

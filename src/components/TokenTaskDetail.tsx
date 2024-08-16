@@ -27,6 +27,7 @@ const TokenTaskDetail: React.FC = () => {
   const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
   const [task, setTask] = useState<Task | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,12 +81,29 @@ const TokenTaskDetail: React.FC = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
+  const checkChannelSubscription = async () => {
+    if (!task?.channelUsername || !user) return;
+    try {
+      setLoading(true);
+      const response = await api.get('/telegram/check-subscription', {
+        params: { telegramId: user.id, channelUsername: task.channelUsername }
+      });
+      setIsSubscribed(response.data.isSubscribed);
+      showMessage(response.data.isSubscribed ? 'Вы подписаны на канал!' : 'Вы не подписаны на канал. Пожалуйста, подпишитесь и проверьте снова.');
+    } catch (error) {
+      console.error('Error checking channel subscription:', error);
+      showMessage('Ошибка при проверке подписки на канал');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCompleteTask = async () => {
     if (!task || !user || task.completed) return;
     try {
-      const completeResponse = await api.post(`/tasks/${task.id}/complete`, { telegramId: user.id });
+      const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
 
-      if (completeResponse.data.success) {
+      if (completeResponse.success) {
         const rewardAmount = typeof task.reward === 'string' ? parseInt(task.reward) : task.reward;
         
         await fetchBalance();
@@ -104,7 +122,7 @@ const TokenTaskDetail: React.FC = () => {
         completedTasks.push(task.id);
         localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
       } else {
-        showMessage(completeResponse.data.error || 'Произошла ошибка при выполнении задания.');
+        showMessage(completeResponse.error || 'Произошла ошибка при выполнении задания.');
       }
     } catch (error: any) {
       console.error('Error completing task:', error);
@@ -139,8 +157,11 @@ const TokenTaskDetail: React.FC = () => {
         <p>Требования:</p>
         <ul>
           {task.channelUsername && (
-            <li>
+            <li className={isSubscribed ? 'completed' : ''}>
               Подписаться на канал @{task.channelUsername}
+              <button onClick={checkChannelSubscription} className="check-button">
+                Проверить подписку
+              </button>
             </li>
           )}
           {task.tokenAmount && (
@@ -153,7 +174,7 @@ const TokenTaskDetail: React.FC = () => {
       <button 
         className="complete-button"
         onClick={handleCompleteTask} 
-        disabled={task.completed}
+        disabled={task.completed || !isSubscribed}
       >
         {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
       </button>
