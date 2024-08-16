@@ -1,35 +1,26 @@
 import React from 'react';
-import '../styles/TaskCard.css';
+import { useNavigate } from 'react-router-dom';
 
 interface TokenTaskCardProps {
   id: number;
-  title: string;
+  name: string;
   reward: string;
-  tokenAmount: number;
+  link: string;
   completed: boolean;
-  onClick: (taskId: number) => void;
 }
 
-const TokenTaskCard: React.FC<TokenTaskCardProps> = ({ 
-  id, 
-  title, 
-  reward, 
-  tokenAmount, 
-  completed, 
-  onClick 
-}) => {
+const TokenTaskCard: React.FC<TokenTaskCardProps> = ({ id, name, reward, link, completed }) => {
+  const navigate = useNavigate();
+
   return (
     <div
-      className={`task-card ${completed ? 'completed' : ''}`}
-      onClick={() => onClick(id)}
+      onClick={() => navigate(link)}
+      className={`token-item ${completed ? 'completed' : ''}`}
     >
-      <div className="task-icon">
-        ₭
-      </div>
-      <div className="task-info">
-        <span className="task-name">{title}</span>
-        <span className="task-reward">{reward}</span>
-        <span className="token-amount">Требуется: {tokenAmount} токенов</span>
+      <div className="token-icon">₭</div>
+      <div className="token-info">
+        <span className="token-name">{name}</span>
+        <span className="token-reward">{reward}</span>
       </div>
       {completed ? (
         <span className="completed-icon">✓</span>

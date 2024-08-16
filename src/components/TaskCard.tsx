@@ -1,14 +1,6 @@
 import React from 'react';
+import { Task } from '../types/task';
 import '../styles/TaskCard.css';
-
-interface Task {
-  id: number;
-  title: string;
-  reward: string;
-  tokenAmount?: number;
-  completed: boolean;
-  type: 'CHANNEL' | 'TOKEN';
-}
 
 interface TaskCardProps {
   task: Task;
@@ -27,9 +19,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
       <div className="task-info">
         <span className="task-name">{task.title}</span>
         <span className="task-reward">{task.reward}</span>
-        {task.type === 'TOKEN' && task.tokenAmount && (
-          <span className="token-amount">Требуется: {task.tokenAmount} токенов</span>
-        )}
       </div>
       {task.completed ? (
         <span className="completed-icon">✓</span>
