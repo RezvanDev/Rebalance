@@ -60,13 +60,17 @@ const TokenTaskDetail: React.FC = () => {
   const checkSubscription = useCallback(async () => {
     if (!task || !user) return;
     try {
+      setLoading(true);
       const response = await taskApi.checkChannelSubscription(user.id.toString(), task.channelUsername);
       console.log('Subscription check response:', response);
       setIsSubscribed(response.isSubscribed);
+      setMessage(null); // Очищаем сообщение об ошибке, если проверка прошла успешно
     } catch (error) {
       console.error('Error checking channel subscription:', error);
       setIsSubscribed(false);
       setMessage('Ошибка при проверке подписки на канал. Пожалуйста, попробуйте позже.');
+    } finally {
+      setLoading(false);
     }
   }, [task, user]);
 
@@ -95,7 +99,10 @@ const TokenTaskDetail: React.FC = () => {
   const handleSubscribe = () => {
     if (task?.channelUsername) {
       window.open(`https://t.me/${task.channelUsername}`, '_blank');
-      setTimeout(checkSubscription, 3000);
+      setMessage('Проверка подписки...');
+      setTimeout(() => {
+        checkSubscription();
+      }, 3000);
     }
   };
 
@@ -103,6 +110,7 @@ const TokenTaskDetail: React.FC = () => {
     if (!task || !user) return;
 
     try {
+      setLoading(true);
       await checkSubscription();
 
       if (!isSubscribed) {
@@ -131,8 +139,6 @@ const TokenTaskDetail: React.FC = () => {
         completedTasks.push(task.id);
         localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
         
-        setIsSubscribed(true);
-
         setTimeout(() => navigate('/token-tasks'), 3000);
       } else {
         setMessage(completeResponse.error || 'Произошла ошибка при выполнении задания');
@@ -140,15 +146,18 @@ const TokenTaskDetail: React.FC = () => {
     } catch (error: any) {
       console.error('Error completing task:', error);
       setMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания. Пожалуйста, попробуйте позже.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleRefresh = () => {
+    setMessage('Обновление статуса...');
     fetchTask();
     checkSubscription();
   };
 
-  if (loading) {
+  if (loading && !task) {
     return <div className="loading">Загрузка задания...</div>;
   }
 
@@ -188,15 +197,16 @@ const TokenTaskDetail: React.FC = () => {
       <button 
         className="complete-button"
         onClick={handleCompleteTask} 
-        disabled={task.completed || !isSubscribed}
+        disabled={task.completed || !isSubscribed || loading}
       >
-        {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
+        {task.completed ? 'Задание выполнено' : (loading ? 'Загрузка...' : 'Выполнить задание')}
       </button>
       <button 
         className="refresh-button"
         onClick={handleRefresh}
+        disabled={loading}
       >
-        Обновить статус
+        {loading ? 'Обновление...' : 'Обновить статус'}
       </button>
       {message && <div className="message">{message}</div>}
     </div>
