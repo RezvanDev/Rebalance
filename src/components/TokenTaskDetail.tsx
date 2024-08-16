@@ -34,19 +34,24 @@ const TokenTaskDetail: React.FC = () => {
     if (!user || !tokenId) return;
     try {
       setLoading(true);
-      const response = await taskApi.getTask(Number(tokenId));
-      if (response.task) {
-        setTask(response.task);
-        const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
-        if (completedTasks.includes(Number(tokenId))) {
-          setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
+      const response = await taskApi.getTasks('TOKEN');
+      if (response && Array.isArray(response.tasks)) {
+        const foundTask = response.tasks.find((t: Task) => t.id === Number(tokenId));
+        if (foundTask) {
+          setTask(foundTask);
+          const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
+          if (completedTasks.includes(Number(tokenId))) {
+            setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
+          }
+        } else {
+          throw new Error('Задание не найдено');
         }
       } else {
-        throw new Error('Задание не найдено');
+        throw new Error('Неверный формат данных от сервера');
       }
     } catch (err: any) {
       console.error('Error fetching task:', err);
-      setMessage('Ошибка при загрузке задания');
+      setMessage('Ошибка при загрузке задания: ' + (err.message || 'Неизвестная ошибка'));
     } finally {
       setLoading(false);
     }
@@ -103,7 +108,7 @@ const TokenTaskDetail: React.FC = () => {
         return;
       }
 
-      const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
+      const completeResponse = await taskApi.completeTokenTask(task.id, user.id.toString());
 
       if (completeResponse.success) {
         const rewardAmount = Number(task.reward.split(' ')[0]);
@@ -117,8 +122,7 @@ const TokenTaskDetail: React.FC = () => {
 
         setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
         
-        // Обновляем задание, запрашивая актуальные данные с сервера
-        await fetchTask();
+        setTask(prevTask => prevTask ? { ...prevTask, completed: true } : null);
         
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
         completedTasks.push(task.id);
@@ -144,7 +148,7 @@ const TokenTaskDetail: React.FC = () => {
   }
 
   if (!task) {
-    return <div className="error">Задание не найдено</div>;
+    return <div className="error">Задание не найдено. <button onClick={() => navigate('/token-tasks')}>Вернуться к списку заданий</button></div>;
   }
 
   return (
