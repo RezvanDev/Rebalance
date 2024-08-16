@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import api from '../utils/api';
+import { taskApi } from '../api/taskApi'; // Импортируем taskApi
 import TokenTaskCard from '../card/TokenTaskCard';
 import '../styles/TokenTasks.css';
 
@@ -26,12 +26,12 @@ const TokenTasks: React.FC = () => {
       setLoading(true);
       setError(null);
       console.log('Fetching token tasks...');
-      const response = await api.get('/tasks', { params: { type: 'TOKEN' } });
-      console.log('Token tasks response:', response.data);
+      const response = await taskApi.getTasks('TOKEN');
+      console.log('Token tasks response:', response);
 
-      if (response.data && Array.isArray(response.data.tasks)) {
+      if (response && Array.isArray(response.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user?.id}`) || '[]');
-        const tokenTasks = response.data.tasks.map((task: TokenTask) => ({
+        const tokenTasks = response.tasks.map((task: TokenTask) => ({
           ...task,
           completed: completedTasks.includes(task.id)
         }));
