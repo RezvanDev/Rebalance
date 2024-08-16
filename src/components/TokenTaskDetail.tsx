@@ -10,7 +10,7 @@ interface Task {
   id: number;
   title: string;
   description: string;
-  reward: string;
+  reward: string | number;
   completed: boolean;
   channelUsername?: string;
   tokenAddress?: string;
@@ -81,7 +81,7 @@ const TokenTaskDetail: React.FC = () => {
       const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
 
       if (completeResponse.success) {
-        const rewardAmount = parseInt(task.reward.split(' ')[0]);
+        const rewardAmount = typeof task.reward === 'string' ? parseInt(task.reward) : task.reward;
         
         await fetchBalance();
         
@@ -91,7 +91,7 @@ const TokenTaskDetail: React.FC = () => {
           description: `Выполнение задания: ${task.title}`
         });
 
-        showMessage(`Вы получили ${task.reward} за выполнение задания!`);
+        showMessage(`Вы получили ${rewardAmount} LIBRA за выполнение задания!`);
         
         setTask({ ...task, completed: true });
         
@@ -127,10 +127,25 @@ const TokenTaskDetail: React.FC = () => {
       <h1>{task.title}</h1>
       <p className="description">{task.description}</p>
       <div className="task-info">
-        <p className="reward">Награда: {task.reward}</p>
+        <p className="reward">Награда: {task.reward} LIBRA</p>
         {task.tokenAmount && <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>}
         {task.channelUsername && <p className="channel">Требуется подписка на канал: @{task.channelUsername}</p>}
         <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
+      </div>
+      <div className="task-requirements">
+        <p>Требования:</p>
+        <ul>
+          {task.channelUsername && (
+            <li className={isCompleted ? 'completed' : ''}>
+              Подписаться на канал @{task.channelUsername}
+            </li>
+          )}
+          {task.tokenAmount && (
+            <li className={isCompleted ? 'completed' : ''}>
+              Иметь {task.tokenAmount} токенов на балансе
+            </li>
+          )}
+        </ul>
       </div>
       <button 
         className="complete-button"
