@@ -90,9 +90,9 @@ const TokenTaskDetail: React.FC = () => {
       });
       setIsSubscribed(response.data.isSubscribed);
       showMessage(response.data.isSubscribed ? 'Вы подписаны на канал!' : 'Вы не подписаны на канал. Пожалуйста, подпишитесь и проверьте снова.');
-    } catch (error) {
-      console.error('Error checking channel subscription:', error);
-      showMessage('Ошибка при проверке подписки на канал');
+    } catch (error: any) {
+      console.error('Ошибка при проверке подписки на канал:', error);
+      showMessage(error.response?.data?.error || 'Ошибка при проверке подписки на канал');
     } finally {
       setLoading(false);
     }
@@ -101,6 +101,11 @@ const TokenTaskDetail: React.FC = () => {
   const handleCompleteTask = async () => {
     if (!task || !user || task.completed) return;
     try {
+      if (task.channelUsername && !isSubscribed) {
+        showMessage('Пожалуйста, подпишитесь на канал перед выполнением задания.');
+        return;
+      }
+
       const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
 
       if (completeResponse.success) {
@@ -125,7 +130,7 @@ const TokenTaskDetail: React.FC = () => {
         showMessage(completeResponse.error || 'Произошла ошибка при выполнении задания.');
       }
     } catch (error: any) {
-      console.error('Error completing task:', error);
+      console.error('Ошибка при выполнении задания:', error);
       showMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
     }
   };
@@ -174,7 +179,7 @@ const TokenTaskDetail: React.FC = () => {
       <button 
         className="complete-button"
         onClick={handleCompleteTask} 
-        disabled={task.completed || !isSubscribed}
+        disabled={task.completed || (task.channelUsername && !isSubscribed)}
       >
         {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
       </button>
