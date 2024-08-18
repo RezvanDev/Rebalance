@@ -4,20 +4,15 @@ import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
 import { taskApi } from '../api/taskApi';
-import api from '../utils/api';
 import '../styles/TokenTaskDetail.css';
 
 interface Task {
   id: number;
   title: string;
   description: string;
-  reward: string | number;
+  reward: string;
   completed: boolean;
-  channelUsername?: string;
-  tokenAddress?: string;
-  tokenAmount?: number;
-  maxParticipants?: number;
-  currentParticipants?: number;
+  channelUsername: string;
 }
 
 const TokenTaskDetail: React.FC = () => {
@@ -27,7 +22,6 @@ const TokenTaskDetail: React.FC = () => {
   const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
   const [task, setTask] = useState<Task | null>(null);
-  const [isSubscribed, setIsSubscribed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,45 +75,24 @@ const TokenTaskDetail: React.FC = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const checkChannelSubscription = async () => {
-    if (!task?.channelUsername || !user) return;
-    try {
-      setLoading(true);
-      const response = await api.get('/telegram/check-subscription', {
-        params: { telegramId: user.id, channelUsername: task.channelUsername }
-      });
-      setIsSubscribed(response.data.isSubscribed);
-      showMessage(response.data.isSubscribed ? 'Вы подписаны на канал!' : 'Вы не подписаны на канал. Пожалуйста, подпишитесь и проверьте снова.');
-    } catch (error: any) {
-      console.error('Ошибка при проверке подписки на канал:', error);
-      showMessage(error.response?.data?.error || 'Ошибка при проверке подписки на канал');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCompleteTask = async () => {
+  const handleSubscribe = async () => {
     if (!task || !user || task.completed) return;
-    try {
-      if (task.channelUsername && !isSubscribed) {
-        showMessage('Пожалуйста, подпишитесь на канал перед выполнением задания.');
-        return;
-      }
 
+    try {
       const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
 
       if (completeResponse.success) {
-        const rewardAmount = typeof task.reward === 'string' ? parseInt(task.reward) : task.reward;
+        const rewardAmount = parseInt(task.reward.split(' ')[0]);
         
         await fetchBalance();
         
         addTransaction({
           type: 'Получение',
           amount: `${rewardAmount} LIBRA`,
-          description: `Выполнение задания: ${task.title}`
+          description: `Подписка на канал ${task.title}`
         });
 
-        showMessage(`Вы получили ${rewardAmount} LIBRA за выполнение задания!`);
+        showMessage(`Вы получили ${task.reward} за подписку на ${task.title}!`);
         
         setTask({ ...task, completed: true });
         
@@ -130,7 +103,7 @@ const TokenTaskDetail: React.FC = () => {
         showMessage(completeResponse.error || 'Произошла ошибка при выполнении задания.');
       }
     } catch (error: any) {
-      console.error('Ошибка при выполнении задания:', error);
+      console.error('Error completing task:', error);
       showMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
     }
   };
@@ -153,35 +126,23 @@ const TokenTaskDetail: React.FC = () => {
       <h1>{task.title}</h1>
       <p className="description">{task.description}</p>
       <div className="task-info">
-        <p className="reward">Награда: {task.reward} LIBRA</p>
-        {task.tokenAmount && <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>}
-        {task.channelUsername && <p className="channel">Требуется подписка на канал: @{task.channelUsername}</p>}
-        <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
+        <p className="reward">Награда: {task.reward}</p>
+        <p className="channel">Требуется подписка на канал: @{task.channelUsername}</p>
       </div>
-      <div className="task-requirements">
-        <p>Требования:</p>
-        <ul>
-          {task.channelUsername && (
-            <li className={isSubscribed ? 'completed' : ''}>
-              Подписаться на канал @{task.channelUsername}
-              <button onClick={checkChannelSubscription} className="check-button">
-                Проверить подписку
-              </button>
-            </li>
-          )}
-          {task.tokenAmount && (
-            <li>
-              Иметь {task.tokenAmount} токенов на балансе
-            </li>
-          )}
-        </ul>
-      </div>
+      <a 
+        href={`https://t.me/${task.channelUsername}`} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        className="subscribe-link"
+      >
+        Перейти на канал
+      </a>
       <button 
         className="complete-button"
-        onClick={handleCompleteTask} 
-        disabled={task.completed || (task.channelUsername && !isSubscribed)}
+        onClick={handleSubscribe} 
+        disabled={task.completed}
       >
-        {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
+        {task.completed ? 'Задание выполнено' : 'Подтвердить подписку'}
       </button>
     </div>
   );
