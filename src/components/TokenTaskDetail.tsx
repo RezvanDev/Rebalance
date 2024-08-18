@@ -4,6 +4,7 @@ import { useTelegram } from '../context/TelegramContext';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../hooks/useTransactions';
 import { taskApi } from '../api/taskApi';
+import api from '../utils/api';
 import '../styles/TokenTaskDetail.css';
 
 interface Task {
@@ -13,6 +14,8 @@ interface Task {
   reward: string;
   completed: boolean;
   channelUsername: string;
+  tokenAddress: string;
+  tokenAmount: number;
 }
 
 const TokenTaskDetail: React.FC = () => {
@@ -22,6 +25,8 @@ const TokenTaskDetail: React.FC = () => {
   const { balance, fetchBalance } = useBalance();
   const { addTransaction } = useTransactions();
   const [task, setTask] = useState<Task | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [hasTokens, setHasTokens] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,8 +80,45 @@ const TokenTaskDetail: React.FC = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const handleSubscribe = async () => {
+  const checkChannelSubscription = async () => {
+    if (!task?.channelUsername || !user) return;
+    try {
+      const response = await api.get('/telegram/check-subscription', {
+        params: { telegramId: user.id, channelUsername: task.channelUsername }
+      });
+      setIsSubscribed(response.data.isSubscribed);
+      showMessage(response.data.isSubscribed ? 'Вы подписаны на канал!' : 'Вы не подписаны на канал. Пожалуйста, подпишитесь и проверьте снова.');
+    } catch (error: any) {
+      console.error('Ошибка при проверке подписки на канал:', error);
+      showMessage(error.response?.data?.error || 'Ошибка при проверке подписки на канал');
+    }
+  };
+
+  const checkTokenBalance = async () => {
+    if (!task || !user) return;
+    try {
+      // Здесь должен быть запрос на проверку баланса токенов
+      // Так как эта функциональность не реализована на сервере, мы просто показываем сообщение
+      showMessage('Проверка баланса токенов в настоящее время недоступна.');
+      setHasTokens(false); // Устанавливаем в false, так как не можем проверить
+    } catch (error: any) {
+      console.error('Ошибка при проверке баланса токенов:', error);
+      showMessage('Ошибка при проверке баланса токенов');
+    }
+  };
+
+  const handleCompleteTask = async () => {
     if (!task || !user || task.completed) return;
+
+    if (!isSubscribed) {
+      showMessage('Пожалуйста, подпишитесь на канал перед выполнением задания.');
+      return;
+    }
+
+    if (!hasTokens) {
+      showMessage('Для выполнения задания необходимо иметь достаточное количество токенов.');
+      return;
+    }
 
     try {
       const completeResponse = await taskApi.completeTask(task.id, user.id.toString());
@@ -89,10 +131,10 @@ const TokenTaskDetail: React.FC = () => {
         addTransaction({
           type: 'Получение',
           amount: `${rewardAmount} LIBRA`,
-          description: `Подписка на канал ${task.title}`
+          description: `Выполнение задания: ${task.title}`
         });
 
-        showMessage(`Вы получили ${task.reward} за подписку на ${task.title}!`);
+        showMessage(`Вы получили ${task.reward} за выполнение задания!`);
         
         setTask({ ...task, completed: true });
         
@@ -128,6 +170,7 @@ const TokenTaskDetail: React.FC = () => {
       <div className="task-info">
         <p className="reward">Награда: {task.reward}</p>
         <p className="channel">Требуется подписка на канал: @{task.channelUsername}</p>
+        <p className="token-requirement">Требуется токенов: {task.tokenAmount}</p>
       </div>
       <a 
         href={`https://t.me/${task.channelUsername}`} 
@@ -137,12 +180,18 @@ const TokenTaskDetail: React.FC = () => {
       >
         Перейти на канал
       </a>
+      <button onClick={checkChannelSubscription} className="check-subscription-button">
+        Проверить подписку
+      </button>
+      <button onClick={checkTokenBalance} className="check-balance-button">
+        Проверить баланс токенов
+      </button>
       <button 
         className="complete-button"
-        onClick={handleSubscribe} 
-        disabled={task.completed}
+        onClick={handleCompleteTask} 
+        disabled={task.completed || !isSubscribed || !hasTokens}
       >
-        {task.completed ? 'Задание выполнено' : 'Подтвердить подписку'}
+        {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
       </button>
     </div>
   );
