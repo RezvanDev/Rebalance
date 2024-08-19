@@ -86,19 +86,4 @@ getReferralCode: async (telegramId: string) => {
       throw error;
     }
   },
-
-  checkTokenBalance: async (walletAddress: string, tokenAddress: string, requiredAmount: number) => {
-    try {
-      console.log(`Checking token balance for wallet ${walletAddress}, token ${tokenAddress}, required amount ${requiredAmount}`);
-      const response = await api.get('/tasks/check-token-balance', {
-        params: { walletAddress, tokenAddress, requiredAmount }
-      });
-      console.log('Token balance check response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error checking token balance:', error);
-      throw error;
-    }
-  },
-
 };

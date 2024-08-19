@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import { taskApi } from '../api/taskApi';
-import TokenTaskCard from '../card/TokenTaskCard';
+import axios from 'axios';
+import { API_URL } from '../config/apiConfig';
 import '../styles/TokenTasks.css';
 
 interface TokenTask {
   id: number;
   title: string;
-  description: string;
   reward: string;
   tokenAddress: string;
   tokenAmount: number;
   completed: boolean;
-  channelUsername?: string;
 }
 
 const TokenTasks: React.FC = () => {
@@ -42,10 +40,10 @@ const TokenTasks: React.FC = () => {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await taskApi.getTasks('TOKEN');
-      if (response && Array.isArray(response.tasks)) {
+      const response = await axios.get(`${API_URL}/tasks?type=TOKEN`);
+      if (response.data && Array.isArray(response.data.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user?.id}`) || '[]');
-        const tokenTasks = response.tasks.map((task: TokenTask) => ({
+        const tokenTasks = response.data.tasks.map((task: TokenTask) => ({
           ...task,
           completed: completedTasks.includes(task.id)
         }));
@@ -78,15 +76,16 @@ const TokenTasks: React.FC = () => {
     <div className="token-tasks-container">
       <h1>Задания по токенам</h1>
       <div className="token-list">
-        {tasks.map((task) => (
-          <TokenTaskCard
+        {tasks.filter(task => !task.completed).map((task) => (
+          <div
             key={task.id}
-            id={task.id}
-            name={task.title}
-            reward={task.reward}
-            completed={task.completed}
+            className="token-item"
             onClick={() => handleTaskClick(task.id)}
-          />
+          >
+            <span className="token-name">{task.title}</span>
+            <span className="token-reward">{task.reward}</span>
+            <span className="token-amount">Требуется: {task.tokenAmount} токенов</span>
+          </div>
         ))}
       </div>
     </div>
