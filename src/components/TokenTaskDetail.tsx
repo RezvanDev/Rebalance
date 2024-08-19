@@ -8,7 +8,7 @@ interface Task {
   id: number;
   title: string;
   description: string;
-  reward: string;
+  reward: number;
   completed: boolean;
   channelUsername?: string;
   tokenAddress?: string;
@@ -22,8 +22,6 @@ const TokenTaskDetail: React.FC = () => {
   const navigate = useNavigate();
   const { taskId } = useParams<{ taskId: string }>();
   const [task, setTask] = useState<Task | null>(null);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [ownsToken, setOwnsToken] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,12 +46,15 @@ const TokenTaskDetail: React.FC = () => {
     try {
       setLoading(true);
       const response = await taskApi.getTasks('TOKEN');
-      const taskData = response.tasks.find((t: Task) => t.id === parseInt(taskId));
-      if (taskData) {
-        setTask(taskData);
-        checkRequirements(taskData);
+      if (response.success) {
+        const taskData = response.tasks.find((t: Task) => t.id === parseInt(taskId));
+        if (taskData) {
+          setTask(taskData);
+        } else {
+          setMessage('Задание не найдено');
+        }
       } else {
-        setMessage('Задание не найдено');
+        setMessage('Ошибка при загрузке задания');
       }
     } catch (error) {
       console.error('Error fetching task:', error);
@@ -63,34 +64,13 @@ const TokenTaskDetail: React.FC = () => {
     }
   };
 
-  const checkRequirements = async (task: Task) => {
-    if (task.channelUsername) {
-      const subscribed = await checkChannelSubscription(task.channelUsername);
-      setIsSubscribed(subscribed);
-    }
-    if (task.tokenAddress && task.tokenAmount) {
-      const hasTokens = await checkTokenOwnership(task.tokenAddress, task.tokenAmount);
-      setOwnsToken(hasTokens);
-    }
-  };
-
-  const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
-    // Реализация проверки подписки на канал
-    return true; // Заглушка, замените на реальную проверку
-  };
-
-  const checkTokenOwnership = async (tokenAddress: string, requiredAmount: number): Promise<boolean> => {
-    // Реализация проверки владения токенами
-    return true; // Заглушка, замените на реальную проверку
-  };
-
   const handleCompleteTask = async () => {
     if (!task || !user) return;
 
     try {
       const response = await taskApi.completeTask(task.id, user.id.toString());
       if (response.success) {
-        setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
+        setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward} REBA!`);
         setTask({ ...task, completed: true });
       } else {
         setMessage(response.error || 'Произошла ошибка при выполнении задания');
@@ -106,7 +86,7 @@ const TokenTaskDetail: React.FC = () => {
   }
 
   if (!task) {
-    return <div className="error">Задание не найдено</div>;
+    return <div className="error">{message || 'Задание не найдено'}</div>;
   }
 
   return (
@@ -114,25 +94,18 @@ const TokenTaskDetail: React.FC = () => {
       <h1>{task.title}</h1>
       <p className="description">{task.description}</p>
       <div className="task-info">
-        <p className="reward">Награда: {task.reward}</p>
-        <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>
-        <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
-      </div>
-      <div className="task-requirements">
-        <p>Требования:</p>
-        <ul>
-          <li className={isSubscribed ? 'completed' : ''}>
-            Подписаться на канал @{task.channelUsername}
-          </li>
-          <li className={ownsToken ? 'completed' : ''}>
-            Иметь {task.tokenAmount} токенов на балансе
-          </li>
-        </ul>
+        <p className="reward">Награда: {task.reward} REBA</p>
+        {task.tokenAmount && (
+          <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>
+        )}
+        {task.maxParticipants && (
+          <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
+        )}
       </div>
       <button 
         className="complete-button"
         onClick={handleCompleteTask} 
-        disabled={!isSubscribed || !ownsToken || task.completed}
+        disabled={task.completed}
       >
         {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
       </button>
