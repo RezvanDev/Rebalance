@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import { taskApi } from '../api/taskApi'; // Импортируем taskApi
+import { taskApi } from '../api/taskApi';
+import TokenTaskCard from '../card/TokenTaskCard';
 import '../styles/TokenTasks.css';
 
 interface TokenTask {
@@ -59,10 +60,6 @@ const TokenTasks: React.FC = () => {
     }
   };
 
-  const handleTaskClick = (taskId: number) => {
-    navigate(`/token-task/${taskId}`);
-  };
-
   if (loading) {
     return <div>Загрузка заданий по токенам...</div>;
   }
@@ -75,16 +72,15 @@ const TokenTasks: React.FC = () => {
     <div className="token-tasks-container">
       <h1>Задания по токенам</h1>
       <div className="token-list">
-        {tasks.filter(task => !task.completed).map((task) => (
-          <div
+        {tasks.map((task) => (
+          <TokenTaskCard
             key={task.id}
-            className="token-item"
-            onClick={() => handleTaskClick(task.id)}
-          >
-            <span className="token-name">{task.title}</span>
-            <span className="token-reward">{task.reward}</span>
-            <span className="token-amount">Требуется: {task.tokenAmount} токенов</span>
-          </div>
+            id={task.id}
+            name={task.title}
+            reward={task.reward}
+            link={`/token-task/${task.id}`}
+            completed={task.completed}
+          />
         ))}
       </div>
     </div>
