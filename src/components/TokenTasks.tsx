@@ -84,8 +84,8 @@ const TokenTasks: React.FC = () => {
             id={task.id}
             name={task.title}
             reward={task.reward}
-            link={`/token-task/${task.id}`}
             completed={task.completed}
+            onClick={() => handleTaskClick(task.id)}
           />
         ))}
       </div>
