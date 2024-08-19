@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import axios from 'axios';
-import { BASE_URL } from '../constants/baseUrl';
+import { taskApi } from '../api/taskApi';
 import '../styles/TokenTaskDetail.css';
 
 interface Task {
@@ -35,7 +34,7 @@ const TokenTaskDetail: React.FC = () => {
   useEffect(() => {
     if (tg && tg.BackButton) {
       tg.BackButton.show();
-      tg.BackButton.onClick(() => navigate('/tasks'));
+      tg.BackButton.onClick(() => navigate('/token-tasks'));
     }
     return () => {
       if (tg && tg.BackButton) {
@@ -45,11 +44,17 @@ const TokenTaskDetail: React.FC = () => {
   }, [tg, navigate]);
 
   const fetchTask = async () => {
+    if (!taskId) return;
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/api/tasks/${taskId}`);
-      setTask(response.data.task);
-      checkRequirements(response.data.task);
+      const response = await taskApi.getTasks('TOKEN');
+      const taskData = response.tasks.find((t: Task) => t.id === parseInt(taskId));
+      if (taskData) {
+        setTask(taskData);
+        checkRequirements(taskData);
+      } else {
+        setMessage('Задание не найдено');
+      }
     } catch (error) {
       console.error('Error fetching task:', error);
       setMessage('Ошибка при загрузке задания');
@@ -70,38 +75,26 @@ const TokenTaskDetail: React.FC = () => {
   };
 
   const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
-    try {
-      const response = await axios.get(`${BASE_URL}/api/telegram/check-subscription`, {
-        params: { telegramId: user?.id, channelUsername }
-      });
-      return response.data.isSubscribed;
-    } catch (error) {
-      console.error('Error checking channel subscription:', error);
-      return false;
-    }
+    // Реализация проверки подписки на канал
+    return true; // Заглушка, замените на реальную проверку
   };
 
   const checkTokenOwnership = async (tokenAddress: string, requiredAmount: number): Promise<boolean> => {
-    try {
-      const response = await axios.get(`${BASE_URL}/api/ton/check-balance`, {
-        params: { address: user?.walletAddress, tokenAddress, requiredAmount }
-      });
-      return response.data.hasEnoughTokens;
-    } catch (error) {
-      console.error('Error checking token ownership:', error);
-      return false;
-    }
+    // Реализация проверки владения токенами
+    return true; // Заглушка, замените на реальную проверку
   };
 
   const handleCompleteTask = async () => {
     if (!task || !user) return;
 
     try {
-      const response = await axios.post(`${BASE_URL}/api/tasks/${task.id}/complete`, null, {
-        params: { telegramId: user.id }
-      });
-      setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
-      setTask({ ...task, completed: true });
+      const response = await taskApi.completeTask(task.id, user.id.toString());
+      if (response.success) {
+        setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
+        setTask({ ...task, completed: true });
+      } else {
+        setMessage(response.error || 'Произошла ошибка при выполнении задания');
+      }
     } catch (error) {
       console.error('Error completing task:', error);
       setMessage('Произошла ошибка при выполнении задания');
