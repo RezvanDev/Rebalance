@@ -21,7 +21,7 @@
   margin-bottom: 20px;
 }
 
-.reward, .token-amount, .progress, .channel {
+.reward, .token-amount, .progress {
   margin: 5px 0;
 }
 
@@ -93,28 +93,4 @@
 
 .error {
   color: #f44336;
-}
-
-.check-button {
-  margin-left: 10px;
-  padding: 5px 10px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.check-button {
-  margin-left: 10px;
-  padding: 5px 10px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.check-button:hover {
-  background-color: #45a049;
 }
