@@ -7,10 +7,9 @@ interface TokenTaskCardProps {
   reward: string;
   link: string;
   completed: boolean;
-  tokenAmount: number;
 }
 
-const TokenTaskCard: React.FC<TokenTaskCardProps> = ({ id, name, reward, link, completed, tokenAmount }) => {
+const TokenTaskCard: React.FC<TokenTaskCardProps> = ({ id, name, reward, link, completed }) => {
   const navigate = useNavigate();
 
   return (
@@ -22,7 +21,6 @@ const TokenTaskCard: React.FC<TokenTaskCardProps> = ({ id, name, reward, link, c
       <div className="token-info">
         <span className="token-name">{name}</span>
         <span className="token-reward">{reward}</span>
-        <span className="token-amount">Требуется: {tokenAmount} токенов</span>
       </div>
       {completed ? (
         <span className="completed-icon">✓</span>
