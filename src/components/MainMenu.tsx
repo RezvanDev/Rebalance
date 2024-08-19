@@ -3,75 +3,120 @@ import { useTonConnect } from "../hooks/useTonConnect";
 import { useTelegram } from "../context/TelegramContext";
 import { useTransactions } from "../hooks/useTransactions";
 import { useBalance } from "../context/BalanceContext";
-import { referralLevels } from "../utils/referralSystem";
 import "../styles/MainMenu.css";
 import backgroundVideo from "../assets/video.mp4";
 import tonIcon from "../assets/ton.svg";
 import { taskApi } from "../api/taskApi";
 
+interface ReferralData {
+  level: number;
+  percentage: number;
+  count: number;
+  reward: number;
+}
+
 const MainMenu: React.FC = () => {
-  const { connected, connectWallet, walletAddress, wallet } = useTonConnect();
+  const { connected, connectWallet, walletAddress } = useTonConnect();
   const { tg, user } = useTelegram();
   const { transactions } = useTransactions();
   const { balance, fetchBalance } = useBalance();
+  const [referralData, setReferralData] = useState<ReferralData[]>([]);
+  const [totalReferrals, setTotalReferrals] = useState(0);
+  const [totalReferralEarnings, setTotalReferralEarnings] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showNotification, setShowNotification] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   
   useEffect(() => {
     if (tg) {
       tg.BackButton.hide();
     }
-    fetchBalance(); // Fetch balance when component mounts
-  }, [tg, fetchBalance]);
-  
-  const fetchUser = useCallback(async () => {
+    fetchBalance();
     if (user?.id) {
-      try {
-        const userData = await taskApi.getReferrals(String(user.id));
-        setUserData(userData);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
+      fetchReferralCode();
+    }
+  }, [tg, fetchBalance, user]);
+  
+  const fetchReferralCode = async () => {
+    if (!user?.id) return;
+    try {
+      const response = await taskApi.getReferralCode(String(user.id));
+      setReferralCode(response.referralCode);
+    } catch (error) {
+      console.error("Error fetching referral code:", error);
+    }
+  };
+  
+  const fetchReferralData = useCallback(async () => {
+    if (!user?.id) {
+      setError("User information is not available");
+      setLoading(false);
+      return;
+    }
+  
+    try {
+      setLoading(true);
+      setError(null);
+      const [referralsResponse, earningsResponse] = await Promise.all([
+        taskApi.getReferrals(String(user.id)),
+        taskApi.getTotalReferralEarnings(String(user.id))
+      ]);
+      console.log("Received referral data:", referralsResponse);
+      console.log("Received total referral earnings:", earningsResponse);
+  
+      if (referralsResponse.success) {
+        const formattedData = Object.entries(referralsResponse.referralsByLevel).map(([level, count]) => ({
+          level: Number(level),
+          percentage: referralsResponse.percentages[level],
+          count: count as number,
+          reward: referralsResponse.rewardsByLevel[level] || 0
+        }));
+        setReferralData(formattedData);
+        setTotalReferrals(referralsResponse.referralsCount);
+        setTotalReferralEarnings(earningsResponse.totalReferralEarnings);
+      } else {
+        setError(referralsResponse.error || "Ошибка при загрузке данных о рефералах");
       }
+    } catch (error) {
+      setError(`Произошла ошибка при загрузке данных: ${error.message}`);
+      console.error("Error fetching referral data:", error);
+    } finally {
+      setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
     if (connected && user?.id) {
-      fetchUser();
+      console.log("Fetching referral data for user:", user.id);
+      fetchReferralData();
+    } else {
+      console.log("Not fetching referral data. Connected:", connected, "User ID:", user?.id);
     }
-  }, [connected, user, fetchUser]);
+  }, [connected, user, fetchReferralData]);
 
-  // Fetch balance periodically
   useEffect(() => {
-    const intervalId = setInterval(fetchBalance, 10000); // Fetch every 10 seconds
+    const intervalId = setInterval(fetchBalance, 10000);
     return () => clearInterval(intervalId);
   }, [fetchBalance]);
 
-  const handleConnectWallet = async () => {
-    try {
-      await connectWallet();
-    } catch (error) {
-      console.error("Failed to connect wallet:", error);
-    }
-  };
-
   const handleInvite = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
+    if (!referralCode) {
+      console.error("Referral code not available");
+      return;
+    }
+    const referralLink = `https://t.me/fmkffjkfmbot?start=${referralCode}`;
     console.log("Попытка шаринга. Реферальная ссылка:", referralLink);
 
     if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-      console.log("Используем openTelegramLink");
       window.Telegram.WebApp.openTelegramLink(
         `https://t.me/share/url?url=${encodeURIComponent(referralLink)}`
       );
     } else if (window.Telegram.WebApp && window.Telegram.WebApp.shareUrl) {
-      console.log("Используем WebApp.shareUrl");
       window.Telegram.WebApp.shareUrl(referralLink);
     } else if (tg && tg.shareUrl) {
-      console.log("Используем tg.shareUrl");
       tg.shareUrl(referralLink);
     } else if (navigator.share) {
-      console.log("Используем navigator.share");
       navigator
         .share({
           title: "Приглашение",
@@ -86,18 +131,19 @@ const MainMenu: React.FC = () => {
           handleCopyReferralLink();
         });
     } else {
-      console.log("Методы шаринга недоступны, копируем ссылку");
       handleCopyReferralLink();
     }
   };
 
   const handleCopyReferralLink = () => {
-    const referralLink = `https://t.me/your_bot?start=REF${user?.id}`;
-    console.log("Копирование ссылки:", referralLink);
+    if (!referralCode) {
+      console.error("Referral code not available");
+      return;
+    }
+    const referralLink = `https://t.me/fmkffjkfmbot?start=${referralCode}`;
     navigator.clipboard
       .writeText(referralLink)
       .then(() => {
-        console.log("Ссылка успешно скопирована");
         setShowNotification(true);
         setTimeout(() => setShowNotification(false), 3000);
       })
@@ -109,6 +155,7 @@ const MainMenu: React.FC = () => {
       });
   };
 
+
   return (
     <div className="container">
       {showNotification && (
@@ -116,7 +163,7 @@ const MainMenu: React.FC = () => {
           Пригласительная ссылка скопирована в буфер обмена
         </div>
       )}
-       <div className="balance-card">
+      <div className="balance-card">
         <video autoPlay loop muted playsInline>
           <source src={backgroundVideo} type="video/mp4" />
         </video>
@@ -143,7 +190,8 @@ const MainMenu: React.FC = () => {
         <div className="referrals-header">
           <div>
             <h3 className="referrals-title">Рефералы</h3>
-            <p className="referrals-count">{userData?.referralsCount || 0}</p>
+            <p className="referrals-count">Всего: {totalReferrals}</p>
+            <p className="referrals-earnings">Заработано: {totalReferralEarnings} REBA</p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <button className="invite-button" onClick={handleInvite}>
@@ -154,26 +202,32 @@ const MainMenu: React.FC = () => {
             </button>
           </div>
         </div>
-        <table className="table">
-          <thead>
-            <tr className="table-header">
-              <th className="table-cell">Уровень</th>
-              <th className="table-cell">Процент</th>
-              <th className="table-cell">Кол-во</th>
-              <th className="table-cell">Награда</th>
-            </tr>
-          </thead>
-          <tbody>
-            {referralLevels.map((level) => (
-              <tr key={level.level} className="table-row">
-                <td className="table-cell">{level.level}</td>
-                <td className="table-cell">{level.percentage}%</td>
-                <td className="table-cell">{userData?.referralsByLevel?.[level.level] || 0}</td>
-                <td className="table-cell">{userData?.rewardsByLevel?.[level.level] || 0} REBA</td>
+        {loading ? (
+          <p>Загрузка данных о рефералах...</p>
+        ) : error ? (
+          <p className="error-message">{error}</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr className="table-header">
+                <th className="table-cell">Уровень</th>
+                <th className="table-cell">Процент</th>
+                <th className="table-cell">Кол-во</th>
+                <th className="table-cell">Награда</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {referralData.map((data) => (
+                <tr key={data.level} className="table-row">
+                  <td className="table-cell">{data.level}</td>
+                  <td className="table-cell">{data.percentage}%</td>
+                  <td className="table-cell">{data.count}</td>
+                  <td className="table-cell">{data.reward} REBA</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="card">
