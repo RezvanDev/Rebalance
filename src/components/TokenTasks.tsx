@@ -8,10 +8,12 @@ import '../styles/TokenTasks.css';
 interface TokenTask {
   id: number;
   title: string;
+  description: string;
   reward: string;
   tokenAddress: string;
   tokenAmount: number;
   completed: boolean;
+  channelUsername?: string;
 }
 
 const TokenTasks: React.FC = () => {
