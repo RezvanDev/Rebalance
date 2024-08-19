@@ -28,7 +28,9 @@ const TokenTaskDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTask();
+    if (taskId) {
+      fetchTask(parseInt(taskId));
+    }
   }, [taskId]);
 
   useEffect(() => {
@@ -43,15 +45,13 @@ const TokenTaskDetail: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const fetchTask = async () => {
-    if (!taskId) return;
+  const fetchTask = async (id: number) => {
     try {
       setLoading(true);
-      const response = await taskApi.getTasks('TOKEN');
-      const foundTask = response.tasks.find((t: Task) => t.id === parseInt(taskId));
-      if (foundTask) {
-        setTask(foundTask);
-        checkRequirements(foundTask);
+      const response = await taskApi.getTaskById(id);
+      if (response && response.task) {
+        setTask(response.task);
+        checkRequirements(response.task);
       } else {
         setMessage('Задание не найдено');
       }
