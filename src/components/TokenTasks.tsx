@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
-import axios from 'axios';
-import { API_URL } from '../config/apiConfig';
+import { taskApi } from '../api/taskApi';
 import '../styles/TokenTasks.css';
 
 interface TokenTask {
@@ -40,20 +39,20 @@ const TokenTasks: React.FC = () => {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/tasks?type=TOKEN`);
-      if (response.data && Array.isArray(response.data.tasks)) {
+      const response = await taskApi.getTasks('TOKEN');
+      if (response && Array.isArray(response.tasks)) {
         const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user?.id}`) || '[]');
-        const tokenTasks = response.data.tasks.map((task: TokenTask) => ({
+        const tokenTasks = response.tasks.map((task: TokenTask) => ({
           ...task,
           completed: completedTasks.includes(task.id)
         }));
         setTasks(tokenTasks);
         setError(null);
       } else {
-        throw new Error('Invalid response format');
+        throw new Error('Неверный формат ответа');
       }
     } catch (err) {
-      console.error('Error fetching token tasks:', err);
+      console.error('Ошибка при загрузке заданий по токенам:', err);
       setError('Ошибка при загрузке заданий по токенам');
     } finally {
       setLoading(false);
@@ -65,29 +64,33 @@ const TokenTasks: React.FC = () => {
   };
 
   if (loading) {
-    return <div>Загрузка заданий по токенам...</div>;
+    return <div className="loading">Загрузка заданий по токенам...</div>;
   }
 
   if (error) {
-    return <div>{error}</div>;
+    return <div className="error">{error}</div>;
   }
 
   return (
     <div className="token-tasks-container">
       <h1>Задания по токенам</h1>
-      <div className="token-list">
-        {tasks.filter(task => !task.completed).map((task) => (
-          <div
-            key={task.id}
-            className="token-item"
-            onClick={() => handleTaskClick(task.id)}
-          >
-            <span className="token-name">{task.title}</span>
-            <span className="token-reward">{task.reward}</span>
-            <span className="token-amount">Требуется: {task.tokenAmount} токенов</span>
-          </div>
-        ))}
-      </div>
+      {tasks.length === 0 ? (
+        <p className="no-tasks">В настоящее время нет доступных заданий по токенам.</p>
+      ) : (
+        <div className="token-list">
+          {tasks.filter(task => !task.completed).map((task) => (
+            <div
+              key={task.id}
+              className="token-item"
+              onClick={() => handleTaskClick(task.id)}
+            >
+              <span className="token-name">{task.title}</span>
+              <span className="token-reward">{task.reward}</span>
+              <span className="token-amount">Требуется: {task.tokenAmount} токенов</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
