@@ -79,16 +79,18 @@ const TokenTaskDetail: React.FC = () => {
     }
   };
 
-  const handleBuyClick = () => {
-    if (task?.buyLink) {
-      window.open(task.buyLink, '_blank');
-    }
-  };
-
   const handleCompleteTask = async () => {
     if (!task || !user || task.completed) return;
 
     try {
+      // Заглушка для проверки баланса токенов
+      const hasEnoughTokens = true; // В реальном приложении здесь должна быть проверка баланса
+
+      if (!hasEnoughTokens) {
+        showMessage(`У вас недостаточно токенов. Необходимо минимум ${task.tokenAmount} ${task.title}`);
+        return;
+      }
+
       const response = await taskApi.completeTask(task.id, user.id);
       
       if (response.success) {
@@ -156,9 +158,8 @@ const TokenTaskDetail: React.FC = () => {
             </li>
           )}
           {task.tokenAmount && (
-            <li onClick={handleBuyClick}>
+            <li>
               2. Купите минимум {task.tokenAmount} {task.title}
-              <span className="arrow">›</span>
             </li>
           )}
         </ul>
