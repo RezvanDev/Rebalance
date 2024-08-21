@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTelegram } from '../context/TelegramContext';
+import { useBalance } from '../context/BalanceContext';
+import { useTransactions } from '../hooks/useTransactions';
 import { taskApi } from '../api/taskApi';
 import '../styles/TokenTaskDetail.css';
 
@@ -23,14 +25,36 @@ const TokenTaskDetail: React.FC = () => {
   const { tg, user } = useTelegram();
   const navigate = useNavigate();
   const { taskId } = useParams<{ taskId: string }>();
+  const { balance, fetchBalance } = useBalance();
+  const { addTransaction } = useTransactions();
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const fetchTask = useCallback(async () => {
+    if (!taskId) return;
+    try {
+      setLoading(true);
+      const response = await taskApi.getTasks('TOKEN');
+      const fetchedTask = response.tasks.find((t: Task) => t.id === parseInt(taskId));
+      if (fetchedTask) {
+        const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user?.id}`) || '[]');
+        setTask({
+          ...fetchedTask,
+          completed: completedTasks.includes(fetchedTask.id)
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching task:', error);
+      showMessage('Ошибка при загрузке задания');
+    } finally {
+      setLoading(false);
+    }
+  }, [taskId, user]);
 
   useEffect(() => {
-    if (taskId) {
-      fetchTask();
-    }
-  }, [taskId]);
+    fetchTask();
+  }, [fetchTask]);
 
   useEffect(() => {
     if (tg && tg.BackButton) {
@@ -44,20 +68,9 @@ const TokenTaskDetail: React.FC = () => {
     };
   }, [tg, navigate]);
 
-  const fetchTask = async () => {
-    if (!taskId) return;
-    try {
-      setLoading(true);
-      const response = await taskApi.getTasks('TOKEN');
-      const fetchedTask = response.tasks.find((t: Task) => t.id === parseInt(taskId));
-      if (fetchedTask) {
-        setTask(fetchedTask);
-      }
-    } catch (error) {
-      console.error('Error fetching task:', error);
-    } finally {
-      setLoading(false);
-    }
+  const showMessage = (msg: string) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(null), 3000);
   };
 
   const handleChannelClick = () => {
@@ -70,6 +83,44 @@ const TokenTaskDetail: React.FC = () => {
     if (task?.buyLink) {
       window.open(task.buyLink, '_blank');
     }
+  };
+
+  const handleCompleteTask = async () => {
+    if (!task || !user || task.completed) return;
+
+    try {
+      const response = await taskApi.completeTask(task.id, user.id);
+      
+      if (response.success) {
+        const rewardAmount = parseFloat(task.reward.split(' ')[0]);
+        
+        await fetchBalance();
+        
+        addTransaction({
+          type: 'Получение',
+          amount: `${rewardAmount} ${task.title}`,
+          description: `Выполнение задания ${task.title}`
+        });
+
+        showMessage(`Вы получили ${task.reward} за выполнение задания!`);
+        
+        setTask({ ...task, completed: true });
+        
+        const completedTasks = JSON.parse(localStorage.getItem(`completedTasks_${user.id}`) || '[]');
+        completedTasks.push(task.id);
+        localStorage.setItem(`completedTasks_${user.id}`, JSON.stringify(completedTasks));
+      } else {
+        showMessage(response.error || 'Произошла ошибка при выполнении задания.');
+      }
+    } catch (error: any) {
+      console.error('Error completing token task:', error);
+      showMessage(error.response?.data?.error || 'Произошла ошибка при выполнении задания. Пожалуйста, попробуйте еще раз.');
+    }
+  };
+
+  const handleRefresh = () => {
+    showMessage('Обновление информации о задании...');
+    fetchTask();
   };
 
   if (loading) {
@@ -112,6 +163,16 @@ const TokenTaskDetail: React.FC = () => {
           )}
         </ul>
       </div>
+      <button 
+        className="complete-button"
+        onClick={handleCompleteTask}
+        disabled={task.completed}
+      >
+        {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
+      </button>
+      <button className="refresh-button" onClick={handleRefresh}>↻</button>
+      {message && <div className="message">{message}</div>}
+      <p className="balance">Текущий баланс: {balance} LIBRA</p>
     </div>
   );
 };
