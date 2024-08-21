@@ -25,6 +25,7 @@ const TokenTaskDetail: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (taskId) {
@@ -48,13 +49,11 @@ const TokenTaskDetail: React.FC = () => {
     if (!taskId) return;
     try {
       setLoading(true);
-      const response = await taskApi.getTasks('TOKEN');
-      const fetchedTask = response.tasks.find((t: Task) => t.id === parseInt(taskId));
-      if (fetchedTask) {
-        setTask(fetchedTask);
-      }
+      const response = await taskApi.getTask(parseInt(taskId));
+      setTask(response.task);
     } catch (error) {
       console.error('Error fetching task:', error);
+      setMessage('Ошибка при загрузке задания');
     } finally {
       setLoading(false);
     }
@@ -69,6 +68,23 @@ const TokenTaskDetail: React.FC = () => {
   const handleBuyClick = () => {
     if (task?.buyLink) {
       window.open(task.buyLink, '_blank');
+    }
+  };
+
+  const handleCompleteTask = async () => {
+    if (!task || !user) return;
+
+    try {
+      const response = await taskApi.completeTask(task.id, user.id);
+      if (response.success) {
+        setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
+        setTask({ ...task, completed: true });
+      } else {
+        setMessage(response.error || 'Произошла ошибка при выполнении задания');
+      }
+    } catch (error) {
+      console.error('Error completing task:', error);
+      setMessage('Произошла ошибка при выполнении задания');
     }
   };
 
@@ -112,6 +128,14 @@ const TokenTaskDetail: React.FC = () => {
           )}
         </ul>
       </div>
+      <button 
+        className="complete-button"
+        onClick={handleCompleteTask} 
+        disabled={task.completed}
+      >
+        {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
+      </button>
+      {message && <div className="message">{message}</div>}
     </div>
   );
 };

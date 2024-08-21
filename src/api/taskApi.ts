@@ -25,6 +25,18 @@ export const taskApi = {
     }
   },
 
+  getTaskById: async (taskId: number) => {
+    try {
+      console.log(`Fetching task with id: ${taskId}`);
+      const response = await api.get(`/tasks/${taskId}`);
+      console.log('Task response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching task:', error);
+      throw error;
+    }
+  },
+
   getBalance: async (telegramId: string) => {
     try {
       console.log(`Fetching balance for user ${telegramId}`);
@@ -107,6 +119,26 @@ getReferralCode: async (telegramId: string) => {
       return response.data;
     } catch (error) {
       console.error('Error checking token balance:', error);
+      throw error;
+    }
+  },
+
+  getTokenTask: async (taskId: number) => {
+    try {
+      const response = await api.get(`/api/token-tasks/${taskId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching token task:', error);
+      throw error;
+    }
+  },
+
+  completeTokenTask: async (taskId: number, telegramId: string) => {
+    try {
+      const response = await api.post(`/api/token-tasks/${taskId}/complete`, { telegramId });
+      return response.data;
+    } catch (error) {
+      console.error('Error completing token task:', error);
       throw error;
     }
   },
