@@ -123,23 +123,5 @@ getReferralCode: async (telegramId: string) => {
     }
   },
 
-  getTokenTask: async (taskId: number) => {
-    try {
-      const response = await api.get(`/api/token-tasks/${taskId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching token task:', error);
-      throw error;
-    }
-  },
-
-  completeTokenTask: async (taskId: number, telegramId: string) => {
-    try {
-      const response = await api.post(`/api/token-tasks/${taskId}/complete`, { telegramId });
-      return response.data;
-    } catch (error) {
-      console.error('Error completing token task:', error);
-      throw error;
-    }
-  },
+  
 };
