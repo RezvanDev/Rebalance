@@ -30,7 +30,7 @@ const AppContent: React.FC = () => {
           <Route path="/reba-academy" element={<RebaAcademy />} />
           <Route path="/channel-tasks" element={<ChannelTasks />} />
           <Route path="/token-tasks" element={<TokenTasks />} />
-          <Route path="/token-task/:tokenId" element={<TokenTaskDetail />} />
+          <Route path="/token-task/:taskId" element={<TokenTaskDetail />} />
         </Routes>
       </div>
       {showNavigationBar && <NavigationBar />}

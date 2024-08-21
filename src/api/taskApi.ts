@@ -86,4 +86,28 @@ getReferralCode: async (telegramId: string) => {
       throw error;
     }
   },
+
+  checkChannelSubscription: async (telegramId: string, channelUsername: string) => {
+    try {
+      const response = await api.get('/telegram/check-subscription', {
+        params: { telegramId, channelUsername }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error checking channel subscription:', error);
+      throw error;
+    }
+  },
+
+  checkTokenBalance: async (address: string, tokenAddress: string, requiredAmount: number) => {
+    try {
+      const response = await api.get('/ton/check-balance', {
+        params: { address, tokenAddress, requiredAmount }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error checking token balance:', error);
+      throw error;
+    }
+  },
 };
