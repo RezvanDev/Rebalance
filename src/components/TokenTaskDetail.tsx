@@ -79,7 +79,6 @@ const TokenTaskDetail: React.FC = () => {
   const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
     if (!user) return false;
     try {
-      // Предполагается, что у вас есть метод в taskApi для проверки подписки
       const response = await taskApi.checkChannelSubscription(user.id, channelUsername);
       return response.isSubscribed;
     } catch (error) {
@@ -91,7 +90,6 @@ const TokenTaskDetail: React.FC = () => {
   const checkTokenOwnership = async (tokenAddress: string, requiredAmount: number): Promise<boolean> => {
     if (!user) return false;
     try {
-      // Предполагается, что у вас есть метод в taskApi для проверки баланса токенов
       const response = await taskApi.checkTokenBalance(user.walletAddress, tokenAddress, requiredAmount);
       return response.hasEnoughTokens;
     } catch (error) {
@@ -126,23 +124,27 @@ const TokenTaskDetail: React.FC = () => {
       <h1>{task.title}</h1>
       <p className="description">{task.description}</p>
       <div className="task-info">
-        <p className="reward">Награда: {task.reward}</p>
-        {task.tokenAmount && <p className="token-amount">Требуемое количество токенов: {task.tokenAmount}</p>}
-        {task.currentParticipants !== undefined && task.maxParticipants !== undefined && (
-          <p className="progress">Прогресс: {task.currentParticipants}/{task.maxParticipants}</p>
-        )}
+        <div className="reward">
+          <h3>Награда</h3>
+          <p>{task.reward} {task.title}</p>
+        </div>
+        <div className="progress">
+          <h3>Выполнили</h3>
+          <p>{task.currentParticipants} из {task.maxParticipants}</p>
+          <span>В этом задании ограниченное количество участников</span>
+        </div>
       </div>
       <div className="task-requirements">
-        <p>Требования:</p>
+        <h3>Задание</h3>
         <ul>
           {task.channelUsername && (
             <li className={isSubscribed ? 'completed' : ''}>
-              Подписаться на канал @{task.channelUsername}
+              Подписаться на канал {task.channelUsername}
             </li>
           )}
           {task.tokenAmount && (
             <li className={ownsToken ? 'completed' : ''}>
-              Иметь {task.tokenAmount} токенов на балансе
+              Купите минимум {task.tokenAmount} {task.title}
             </li>
           )}
         </ul>
