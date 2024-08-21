@@ -15,6 +15,8 @@ interface Task {
   tokenAmount?: number;
   maxParticipants?: number;
   currentParticipants?: number;
+  channelLink?: string;
+  buyLink?: string;
 }
 
 const TokenTaskDetail: React.FC = () => {
@@ -22,9 +24,6 @@ const TokenTaskDetail: React.FC = () => {
   const navigate = useNavigate();
   const { taskId } = useParams<{ taskId: string }>();
   const [task, setTask] = useState<Task | null>(null);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [ownsToken, setOwnsToken] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,61 +52,23 @@ const TokenTaskDetail: React.FC = () => {
       const fetchedTask = response.tasks.find((t: Task) => t.id === parseInt(taskId));
       if (fetchedTask) {
         setTask(fetchedTask);
-        await checkRequirements(fetchedTask);
-      } else {
-        setMessage('Задание не найдено');
       }
     } catch (error) {
       console.error('Error fetching task:', error);
-      setMessage('Ошибка при загрузке задания');
     } finally {
       setLoading(false);
     }
   };
 
-  const checkRequirements = async (task: Task) => {
-    if (task.channelUsername && user) {
-      const subscribed = await checkChannelSubscription(task.channelUsername);
-      setIsSubscribed(subscribed);
-    }
-    if (task.tokenAddress && task.tokenAmount && user) {
-      const hasTokens = await checkTokenOwnership(task.tokenAddress, task.tokenAmount);
-      setOwnsToken(hasTokens);
+  const handleChannelClick = () => {
+    if (task?.channelLink) {
+      window.open(task.channelLink, '_blank');
     }
   };
 
-  const checkChannelSubscription = async (channelUsername: string): Promise<boolean> => {
-    if (!user) return false;
-    try {
-      const response = await taskApi.checkChannelSubscription(user.id, channelUsername);
-      return response.isSubscribed;
-    } catch (error) {
-      console.error('Error checking channel subscription:', error);
-      return false;
-    }
-  };
-
-  const checkTokenOwnership = async (tokenAddress: string, requiredAmount: number): Promise<boolean> => {
-    if (!user) return false;
-    try {
-      const response = await taskApi.checkTokenBalance(user.walletAddress, tokenAddress, requiredAmount);
-      return response.hasEnoughTokens;
-    } catch (error) {
-      console.error('Error checking token ownership:', error);
-      return false;
-    }
-  };
-
-  const handleCompleteTask = async () => {
-    if (!task || !user) return;
-
-    try {
-      const response = await taskApi.completeTask(task.id, user.id);
-      setMessage(`Поздравляем! Вы выполнили задание и получили ${task.reward}!`);
-      setTask({ ...task, completed: true });
-    } catch (error) {
-      console.error('Error completing task:', error);
-      setMessage('Произошла ошибка при выполнении задания');
+  const handleBuyClick = () => {
+    if (task?.buyLink) {
+      window.open(task.buyLink, '_blank');
     }
   };
 
@@ -116,7 +77,7 @@ const TokenTaskDetail: React.FC = () => {
   }
 
   if (!task) {
-    return <div className="error">{message || 'Задание не найдено'}</div>;
+    return <div className="error">Задание не найдено</div>;
   }
 
   return (
@@ -124,11 +85,11 @@ const TokenTaskDetail: React.FC = () => {
       <h1>{task.title}</h1>
       <p className="description">{task.description}</p>
       <div className="task-info">
-        <div className="reward">
+        <div className="info-block reward">
           <h3>Награда</h3>
           <p>{task.reward} {task.title}</p>
         </div>
-        <div className="progress">
+        <div className="info-block progress">
           <h3>Выполнили</h3>
           <p>{task.currentParticipants} из {task.maxParticipants}</p>
           <span>В этом задании ограниченное количество участников</span>
@@ -138,25 +99,19 @@ const TokenTaskDetail: React.FC = () => {
         <h3>Задание</h3>
         <ul>
           {task.channelUsername && (
-            <li className={isSubscribed ? 'completed' : ''}>
-              Подписаться на канал {task.channelUsername}
+            <li onClick={handleChannelClick}>
+              1. Подписаться на канал {task.channelUsername}
+              <span className="arrow">›</span>
             </li>
           )}
           {task.tokenAmount && (
-            <li className={ownsToken ? 'completed' : ''}>
-              Купите минимум {task.tokenAmount} {task.title}
+            <li onClick={handleBuyClick}>
+              2. Купите минимум {task.tokenAmount} {task.title}
+              <span className="arrow">›</span>
             </li>
           )}
         </ul>
       </div>
-      <button 
-        className="complete-button"
-        onClick={handleCompleteTask} 
-        disabled={!isSubscribed || !ownsToken || task.completed}
-      >
-        {task.completed ? 'Задание выполнено' : 'Выполнить задание'}
-      </button>
-      {message && <div className="message">{message}</div>}
     </div>
   );
 };
