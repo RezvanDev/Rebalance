@@ -25,18 +25,6 @@ export const taskApi = {
     }
   },
 
-  getTaskById: async (taskId: number) => {
-    try {
-      console.log(`Fetching task with id: ${taskId}`);
-      const response = await api.get(`/tasks/${taskId}`);
-      console.log('Task response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching task:', error);
-      throw error;
-    }
-  },
-
   getBalance: async (telegramId: string) => {
     try {
       console.log(`Fetching balance for user ${telegramId}`);
