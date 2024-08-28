@@ -1,4 +1,4 @@
-// referralSystem.ts
+
 
 export interface ReferralLevel {
   level: number;

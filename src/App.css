@@ -17,7 +17,7 @@ body, html {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  padding-bottom: 60px; /* Высота нижней панели навигации */
+  padding-bottom: 60px; 
 }
 
 .card {

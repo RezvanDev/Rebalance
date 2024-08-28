@@ -83,8 +83,7 @@ const TokenTaskDetail: React.FC = () => {
     if (!task || !user || task.completed) return;
 
     try {
-      // Заглушка для проверки баланса токенов
-      const hasEnoughTokens = true; // В реальном приложении здесь должна быть проверка баланса
+      const hasEnoughTokens = true; 
 
       if (!hasEnoughTokens) {
         showMessage(`У вас недостаточно токенов. Необходимо минимум ${task.tokenAmount} ${task.title}`);

@@ -84,7 +84,6 @@ const RebaAcademy: React.FC = () => {
       setIsCorrect(correct);
       
       if (correct) {
-        // Trigger confetti with a slight delay
         setTimeout(() => {
           confetti({
             particleCount: 100,

@@ -17,7 +17,7 @@ export function useCounterContract() {
   const counterContract = useAsyncInitialize(async () => {
     if (!client) return;
     const contract = new Counter(
-      Address.parse('EQDZ8QtzInlNAvK6pHBUW6SBslnZhVDrkpOIqzclKLAoIwTo') // replace with your address from tutorial 2 step 8
+      Address.parse('EQDZ8QtzInlNAvK6pHBUW6SBslnZhVDrkpOIqzclKLAoIwTo') 
     );
     return client.open(contract) as OpenedContract<Counter>;
   }, [client]);
@@ -28,7 +28,7 @@ export function useCounterContract() {
       setVal(null);
       const val = await counterContract.getCounter();
       setVal(val.toString());
-      await sleep(5000); // sleep 5 seconds and poll value again
+      await sleep(5000); 
       getValue();
     }
     getValue();

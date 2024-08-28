@@ -1,4 +1,4 @@
-// src/hooks/useTransactions.ts
+
 import { useState, useEffect, useCallback } from 'react';
 import { useTelegram } from '../context/TelegramContext';
 

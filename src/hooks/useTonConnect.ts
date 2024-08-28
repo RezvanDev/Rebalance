@@ -22,7 +22,7 @@ export function useTonConnect() {
     balance,
     connectWallet: async () => {
       if (tonConnectUI.connected) {
-        return; // Already connected
+        return; 
       }
       try {
         await tonConnectUI.connectWallet();

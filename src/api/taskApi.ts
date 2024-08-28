@@ -82,7 +82,6 @@ getReferralCode: async (telegramId: string) => {
     }
   },
 
-  // Добавим новый метод для получения общего заработка от рефералов
   getTotalReferralEarnings: async (telegramId: string) => {
     try {
       console.log(`Fetching total referral earnings for user ${telegramId}`);

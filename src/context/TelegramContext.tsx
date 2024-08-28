@@ -26,9 +26,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         username: telegram.initDataUnsafe.user.username,
       });
     } else {
-      // Если мы не можем получить пользователя из Telegram, создадим временного пользователя
       setUser({
-        id: Date.now(), // Используем текущее время как временный ID
+        id: Date.now(), 
         username: 'temp_user'
       });
     }
